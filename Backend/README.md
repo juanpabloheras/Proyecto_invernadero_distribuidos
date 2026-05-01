@@ -73,12 +73,12 @@ Route → Controller → Service → Dao → Model
 
 
 ### Endpoints
-- Obtener todas las lecturas 
+- Obtener todas los sensores
 ```bash
 GET /api/sensores
 ```
 
-- Crear una nueva lectura
+- Crear un sensor
 
 ```bash
 POST /api/sensores
@@ -87,10 +87,8 @@ POST /api/sensores
 Body:
 ```JSON
 {
-  "temperatura": 25,
-  "humedad": 70,
-  "humedadSuelo": 50,
-  "luz": 800
+  "nombre": "Sensor 1",
+  "tipo": "TEMPERATURA"
 }
 ```
 
