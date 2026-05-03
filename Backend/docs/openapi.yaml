@@ -1,0 +1,666 @@
+openapi: 3.0.3
+
+info:
+  title: API Invernadero
+  version: 1.0.0
+  description: Documentación de endpoints del backend del proyecto Invernadero.
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor local
+
+tags:
+  - name: General
+  - name: Sensores
+  - name: Configuraciones de Alarma
+  - name: Usuarios
+
+paths:
+  /:
+    get:
+      tags: [General]
+      summary: Verificar que la API está funcionando
+      responses:
+        "200":
+          description: API funcionando
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: API del invernadero funcionando
+
+  /api/sensores:
+    get:
+      tags: [Sensores]
+      summary: Obtener sensores con paginación, filtros y ordenamiento
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            example: 5
+        - in: query
+          name: nombre
+          schema:
+            type: string
+            example: Sensor
+        - in: query
+          name: tipo
+          schema:
+            type: string
+            enum: [TEMPERATURA, HUMEDAD]
+        - in: query
+          name: activo
+          schema:
+            type: boolean
+            example: true
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [nombre, tipo, activo, createdAt]
+            example: createdAt
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [ASC, DESC]
+            example: DESC
+      responses:
+        "200":
+          description: Sensores obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorListWrapperResponse"
+        "400":
+          description: Parámetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      tags: [Sensores]
+      summary: Crear sensor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorCreateRequest"
+      responses:
+        "201":
+          description: Sensor creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorSingleResponse"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/sensores/{id}:
+    get:
+      tags: [Sensores]
+      summary: Obtener sensor por ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Sensor obtenido correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorSingleResponse"
+        "404":
+          description: Sensor no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags: [Sensores]
+      summary: Eliminar sensor por ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Sensor eliminado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          description: Sensor no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/configuraciones-alarma:
+    get:
+      tags: [Configuraciones de Alarma]
+      summary: Obtener configuraciones de alarma con paginación, filtros y ordenamiento
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            example: 10
+        - in: query
+          name: tipoAlarma
+          schema:
+            type: string
+            enum: [HUMEDAD, TEMPERATURA]
+        - in: query
+          name: activa
+          schema:
+            type: boolean
+            example: true
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [nombreAlarma, tipoAlarma, operador, valorCritico, activa, createdAt]
+            example: createdAt
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [ASC, DESC]
+            example: DESC
+      responses:
+        "200":
+          description: Configuraciones obtenidas correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfiguracionAlarmaListWrapperResponse"
+        "400":
+          description: Parámetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      tags: [Configuraciones de Alarma]
+      summary: Crear configuración de alarma
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfiguracionAlarmaCreateRequest"
+      responses:
+        "201":
+          description: Configuración de alarma creada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfiguracionAlarmaSingleResponse"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/configuraciones-alarma/{id}:
+    get:
+      tags: [Configuraciones de Alarma]
+      summary: Obtener configuración de alarma por ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Configuración obtenida correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfiguracionAlarmaSingleResponse"
+        "404":
+          description: Configuración no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags: [Configuraciones de Alarma]
+      summary: Eliminar configuración de alarma por ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Configuración eliminada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          description: Configuración no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/usuarios:
+    get:
+      tags: [Usuarios]
+      summary: Obtener usuarios
+      responses:
+        "200":
+          description: Usuarios obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioListResponse"
+
+  /api/usuarios/registro:
+    post:
+      tags: [Usuarios]
+      summary: Registrar usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsuarioRegistroRequest"
+      responses:
+        "201":
+          description: Usuario registrado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioSingleResponse"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/usuarios/login:
+    post:
+      tags: [Usuarios]
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Inicio de sesión correcto
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioSingleResponse"
+        "401":
+          description: Credenciales incorrectas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/usuarios/{id}:
+    get:
+      tags: [Usuarios]
+      summary: Obtener usuario por ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Usuario obtenido correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioSingleResponse"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      tags: [Usuarios]
+      summary: Actualizar usuario
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsuarioUpdateRequest"
+      responses:
+        "200":
+          description: Usuario actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioSingleResponse"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags: [Usuarios]
+      summary: Eliminar usuario
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Usuario eliminado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  parameters:
+    IdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        example: 1
+
+  schemas:
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Operación realizada correctamente
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Recurso no encontrado
+
+    Sensor:
+      type: object
+      properties:
+        idSensor:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Sensor1
+        tipo:
+          type: string
+          enum: [TEMPERATURA, HUMEDAD]
+          example: HUMEDAD
+        activo:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SensorCreateRequest:
+      type: object
+      required: [nombre, tipo]
+      properties:
+        nombre:
+          type: string
+          example: Sensor humedad 1
+        tipo:
+          type: string
+          enum: [TEMPERATURA, HUMEDAD]
+          example: HUMEDAD
+
+    SensorSingleResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Sensor obtenido correctamente
+        data:
+          $ref: "#/components/schemas/Sensor"
+
+    SensorListWrapperResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 2
+            pagina:
+              type: integer
+              example: 1
+            limite:
+              type: integer
+              example: 5
+            totalPaginas:
+              type: integer
+              example: 1
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/Sensor"
+
+    MedioNotificacion:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          enum: [EMAIL, APP, SMS]
+          example: EMAIL
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ConfiguracionAlarma:
+      type: object
+      properties:
+        idConfiguracionAlarma:
+          type: integer
+          example: 1
+        nombreAlarma:
+          type: string
+          example: Alarma humedad baja
+        tipoAlarma:
+          type: string
+          enum: [HUMEDAD, TEMPERATURA]
+          example: HUMEDAD
+        operador:
+          type: string
+          enum: [MAYOR_QUE, MENOR_QUE, IGUAL_A]
+          example: MENOR_QUE
+        valorCritico:
+          type: number
+          example: 30
+        activa:
+          type: boolean
+          example: true
+        medios:
+          type: array
+          items:
+            $ref: "#/components/schemas/MedioNotificacion"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ConfiguracionAlarmaCreateRequest:
+      type: object
+      required: [nombreAlarma, tipoAlarma, operador, valorCritico]
+      properties:
+        nombreAlarma:
+          type: string
+          example: Alarma temperatura alta
+        tipoAlarma:
+          type: string
+          enum: [HUMEDAD, TEMPERATURA]
+          example: TEMPERATURA
+        operador:
+          type: string
+          enum: [MAYOR_QUE, MENOR_QUE, IGUAL_A]
+          example: MAYOR_QUE
+        valorCritico:
+          type: number
+          example: 35
+        activa:
+          type: boolean
+          example: true
+
+    ConfiguracionAlarmaSingleResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Configuración obtenida correctamente
+        data:
+          $ref: "#/components/schemas/ConfiguracionAlarma"
+
+    ConfiguracionAlarmaListWrapperResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 2
+            pagina:
+              type: integer
+              example: 1
+            limite:
+              type: integer
+              example: 10
+            totalPaginas:
+              type: integer
+              example: 1
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/ConfiguracionAlarma"
+
+    Usuario:
+      type: object
+      properties:
+        idUsuario:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Juan Pérez
+        correo:
+          type: string
+          format: email
+          example: juan@example.com
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UsuarioRegistroRequest:
+      type: object
+      required: [nombre, correo, contrasenia]
+      properties:
+        nombre:
+          type: string
+          example: Juan Pérez
+        correo:
+          type: string
+          format: email
+          example: juan@example.com
+        contrasenia:
+          type: string
+          format: password
+          example: secreto123
+
+    LoginRequest:
+      type: object
+      required: [correo, contrasenia]
+      properties:
+        correo:
+          type: string
+          format: email
+          example: juan@example.com
+        contrasenia:
+          type: string
+          format: password
+          example: secreto123
+
+    UsuarioUpdateRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          example: Juan Pérez Actualizado
+        correo:
+          type: string
+          format: email
+          example: juan.actualizado@example.com
+        contrasenia:
+          type: string
+          format: password
+          example: nuevoSecreto123
+
+    UsuarioSingleResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Usuario obtenido correctamente
+        data:
+          $ref: "#/components/schemas/Usuario"
+
+    UsuarioListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Usuario"
