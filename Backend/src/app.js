@@ -4,7 +4,8 @@ const express = require("express");
 const cors = require("cors");
 const errorHandler = require("./middlewares/error.middleware");
 const sensorRoutes = require("./routes/sensor.routes");
-const configuracionAlarmaRoutes = require('./routes/configuracionAlarma.routes')
+const usuarioRoutes = require("./routes/usuario.routes");
+const configuracionAlarmaRoutes = require('./routes/configuracionAlarma.routes');
 
 
 
@@ -23,6 +24,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/sensores", sensorRoutes);
 app.use("/api/configuraciones-alarma",configuracionAlarmaRoutes );
+app.use("/api/usuarios", usuarioRoutes);
 
 app.use(errorHandler);
 
