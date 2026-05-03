@@ -1,4 +1,3 @@
-// src/dao/sensor.dao.js
 const { Sensor } = require('../models');
 
 

@@ -1,14 +1,16 @@
-const sensorDao = require('../dao/sensor.dao');
+const sensorDao = require('../data/sensor.dao');
+const AppError = require('../utils/AppError');
+
 
 const crearSensor = async (data) => {
   const { nombre, tipo } = data;
 
   if (!nombre || nombre.trim() === '') {
-    throw new Error('El nombre del sensor es obligatorio');
+    throw new AppError('El nombre del sensor es obligatorio', 400);
   }
 
   if (!tipo || !['TEMPERATURA', 'HUMEDAD'].includes(tipo)) {
-    throw new Error('Tipo de sensor inválido');
+    throw new AppError('Tipo de sensor inválido', 400);
   }
 
   return await sensorDao.crear(data);
@@ -22,7 +24,7 @@ const obtenerSensorPorId = async (id) => {
   const sensor = await sensorDao.obtenerPorId(id);
 
   if (!sensor) {
-    throw new Error('Sensor no encontrado');
+    throw new AppError('Sensor no encontrado', 404);
   }
 
   return sensor;
@@ -32,7 +34,7 @@ const eliminarSensor = async (id) => {
   const sensor = await sensorDao.obtenerPorId(id);
 
   if (!sensor) {
-    throw new Error('Sensor no encontrado');
+    throw new AppError('Sensor no encontrado', 404);
   }
 
   await sensorDao.eliminar(id);

@@ -1,12 +1,13 @@
 const { Sequelize } = require('sequelize');
+const { db } = require('./env');
 
 const sequelize = new Sequelize(
-    process.env.DB_NAME || 'invernadero_db',
-    process.env.DB_USER || 'root',      
-    process.env.DB_PASSWORD || 'password',
+    db.name,
+    db.user,
+    db.password,
     {
-        host: process.env.DB_HOST || 'localhost',
-        port: process.env.DB_PORT || 3306,
+        host: db.host,
+        port: db.port,
         dialect: 'mysql',
         logging: false,
     }

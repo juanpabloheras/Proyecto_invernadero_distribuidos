@@ -10,8 +10,8 @@ async function iniciarServidor() {
     await sequelize.sync();
     console.log('Tablas sincronizadas correctamente');
 
-    app.listen(PORT, () => {
-      console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    app.listen(port, () => {
+      console.log(`Servidor corriendo en http://localhost:${port}`);
     });
   } catch (error) {
     console.error('Error al iniciar el servidor:', error);

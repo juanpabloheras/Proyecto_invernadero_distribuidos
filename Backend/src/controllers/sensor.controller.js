@@ -1,16 +1,15 @@
 const sensorService = require("../services/sensor.service");
 
-const obtenerSensores = async (req, res) => {
+const obtenerSensores = async (req, res, next) => {
   try {
     const data = await sensorService.obtenerSensores();
-
     res.json({ data });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-const crearSensor = async (req, res) => {
+const crearSensor = async (req, res, next) => {
   try {
     const nuevo = await sensorService.crearSensor(req.body);
 
@@ -19,11 +18,11 @@ const crearSensor = async (req, res) => {
       data: nuevo,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-const obtenerSensorPorId = async (req, res) => {
+const obtenerSensorPorId = async (req, res, next) => {
   try {
 
     const { id } = req.params;
@@ -36,14 +35,12 @@ const obtenerSensorPorId = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(404).json({
-      error: error.message
-    });
+    next(error);
   }
 
 };
 
-const eliminarSensor = async (req, res) => {
+const eliminarSensor = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -56,12 +53,10 @@ const eliminarSensor = async (req, res) => {
 
   } catch (error) {
 
-    res.status(404).json({
-      error: error.message
-    });
+    next(error);
   }
-  
-  
+
+
 }
 
 
