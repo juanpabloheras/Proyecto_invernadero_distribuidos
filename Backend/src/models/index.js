@@ -4,6 +4,7 @@ const sequelize = require('../config/database');
 const Sensor = require('./Sensor');
 const ConfiguracionAlarma = require('./ConfiguracionAlarma');
 const MedioNotificacion = require('./MedioNotificacion');
+const Usuario = require('./Usuario');
 
 
 // Relaciones
@@ -29,5 +30,6 @@ module.exports = {
   sequelize,
   Sensor,
   ConfiguracionAlarma,
-  MedioNotificacion
+  MedioNotificacion,
+  Usuario
 };

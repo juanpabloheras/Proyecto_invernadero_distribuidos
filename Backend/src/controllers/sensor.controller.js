@@ -2,7 +2,7 @@ const sensorService = require("../services/sensor.service");
 
 const obtenerSensores = async (req, res, next) => {
   try {
-    const data = await sensorService.obtenerSensores();
+    const data = await sensorService.obtenerSensores(req.query);
     res.json({ data });
   } catch (error) {
     next(error);
