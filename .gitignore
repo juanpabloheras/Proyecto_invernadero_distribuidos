@@ -26,3 +26,4 @@ coverage/
 /Backend/nbproject/private/
 /NotificadorAlarmas/target/
 *.jar
+TCPServer/SensorDataAdapter/target/SensorDataAdapter-dev.jar
