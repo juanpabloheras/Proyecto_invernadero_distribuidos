@@ -23,4 +23,14 @@ logs/
 
 # Opcional (recomendado)
 coverage/
+<<<<<<< HEAD
+=======
+
+# Java / Maven / Quarkus
+*.jar
+*.class
+*.war
+target/
+**/target/
+>>>>>>> 0750239 (Problemasgitignore)
 /Backend/nbproject/private/
