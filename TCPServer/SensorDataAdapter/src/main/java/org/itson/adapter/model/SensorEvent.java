@@ -15,7 +15,7 @@ public class SensorEvent {
 
     private String eventId;
     private int version;
-    private String eventType = "sensorReadingEvent";
+    private String eventType = "sensor.lectura.registrada";
     private Timestamp timestamp;
     private String sensorId;
     private ArrayList<String> mediciones;
@@ -30,7 +30,7 @@ public class SensorEvent {
      */
     public SensorEvent() {
         this.version = 1;
-        this.eventType = "sensorReadingEvent";
+        this.eventType = "sensor.lectura.registrada";
         this.mediciones = new ArrayList<>();
         this.timestamp = new Timestamp(System.currentTimeMillis());
     }

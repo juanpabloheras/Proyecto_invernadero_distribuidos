@@ -8,59 +8,46 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 /**
- * Publisher de eventos a RabbitMQ usando Topic Exchange
+ * Publisher de lecturas de sensores a RabbitMQ usando Topic Exchange.
  *
- * Exchange: sensor.events.topic (Topic Exchange)
- * Routing Key: Tipo de evento (eventType del SensorEvent)
+ * Exchange configurado en application.properties:
+ *   invernadero.events
  *
- * Ejemplos de routing keys:
- *   - "sensorReadingEvent" → Lecturas de sensores
- *   - "errorEvent" → Eventos de error
- *   - "alertEvent" → Alertas del sistema
+ * Canal saliente Quarkus:
+ *   sensor-events
  *
- * Consumidores se suscriben por tipo de evento con switch/pattern matching:
- *   - Queue binding "sensorReadingEvent" → Solo lecturas de sensores
- *   - Queue binding "errorEvent" → Solo errores
- *   - Queue binding "#" → Todos los eventos
- *
- * El JSON contiene toda la información (temperatura, humedad, etc.)
- * La validación de duplicados se hace en el consumidor usando eventId del JSON
- *
- * @author Sistema Invernadero Distribuido
+ * Routing key:
+ *   sensor.lectura.registrada
  */
 @ApplicationScoped
 public class RabbitMQPublisher {
+
+    private static final String ROUTING_KEY_SENSOR_LECTURA_REGISTRADA =
+            "sensor.lectura.registrada";
 
     @Inject
     @Channel("sensor-events")
     Emitter<String> emitter;
 
-    /**
-     * Publica UN mensaje a RabbitMQ con el tipo de evento como routing key
-     * Fire-and-forget: No espera confirmación
-     * El consumidor valida duplicados usando eventId del JSON
-     *
-     * @param eventJson JSON completo del SensorEvent
-     * @param eventType Tipo de evento (usado como routing key)
-     */
-    public void publishEvent(String eventJson, String eventType) {
-        if (eventJson == null || eventJson.isEmpty()) {
+    public void publicarLectura(String eventJson) {
+        publicar(eventJson, ROUTING_KEY_SENSOR_LECTURA_REGISTRADA);
+    }
+
+    private void publicar(String eventJson, String routingKey) {
+        if (eventJson == null || eventJson.isBlank()) {
             System.out.println("[RABBITMQ] JSON vacío, no se publica");
             return;
         }
 
-        String routingKey = (eventType == null || eventType.isEmpty()) ? "unknownEvent" : eventType;
-
         try {
-            // Crear metadata con routing key = eventType
-            OutgoingRabbitMQMetadata metadata = new OutgoingRabbitMQMetadata.Builder()
-                    .withRoutingKey(routingKey)
-                    .build();
+            OutgoingRabbitMQMetadata metadata =
+                    new OutgoingRabbitMQMetadata.Builder()
+                            .withRoutingKey(routingKey)
+                            .build();
 
-            // Crear mensaje con metadata
-            Message<String> message = Message.of(eventJson).addMetadata(metadata);
+            Message<String> message =
+                    Message.of(eventJson).addMetadata(metadata);
 
-            // Publicar sin esperar confirmación (fire-and-forget)
             emitter.send(message);
 
             System.out.println("[RABBITMQ] Publicado → " + routingKey);

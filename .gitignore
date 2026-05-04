@@ -24,3 +24,4 @@ logs/
 # Opcional (recomendado)
 coverage/
 /Backend/nbproject/private/
+/NotificadorAlarmas/target/

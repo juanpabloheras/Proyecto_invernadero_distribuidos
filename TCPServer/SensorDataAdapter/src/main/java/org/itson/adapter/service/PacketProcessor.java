@@ -21,7 +21,6 @@ import java.util.Map;
  */
 @ApplicationScoped
 public class PacketProcessor {
-
     @Inject
     RabbitMQPublisher rabbitMQPublisher;
 
@@ -73,7 +72,7 @@ public class PacketProcessor {
             System.out.println();
 
             // Publicar a RabbitMQ usando eventType como routing key
-            rabbitMQPublisher.publishEvent(eventJson, event.getEventType());
+            rabbitMQPublisher.publicarLectura(eventJson);
 
             return event;
 

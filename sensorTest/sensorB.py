@@ -76,8 +76,10 @@ def enviar(host: str, port: int, data: bytes) -> None:
         s.settimeout(10)
         s.connect((host, port))
         s.sendall(data)
+        
+        respuesta = s.recv(1024)
         print(f"✓ Enviados {len(data)} bytes a {host}:{port}")
-
+        print(f"Respuesta del servidor: {respuesta.decode()}")
 def main():
     parser = argparse.ArgumentParser(description="Simulador Sensor B")
     parser.add_argument("--host",   default="127.0.0.1")

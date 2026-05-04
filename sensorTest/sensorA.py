@@ -67,7 +67,7 @@ def imprimir_paquete(data: bytes) -> None:
     version, cmd, longitud, sid, ts, temp, hum, campos, cs = struct.unpack(FORMATO, data)
     print("─" * 35)
     print(f"Protocolo   : A (float32)")
-    print(f"SensorId    : {sid.rstrip(b'\x00').decode()}")
+    print(f"SensorId    : {sid}")
     print(f"Timestamp   : {ts} ms")
     print(f"Temperatura : {temp:.1f} °C")
     print(f"Humedad     : {hum:.1f} %")
@@ -81,7 +81,10 @@ def enviar(host: str, port: int, data: bytes) -> None:
         s.settimeout(10)
         s.connect((host, port))
         s.sendall(data)
+        
+        respuesta = s.recv(1024)
         print(f"✓ Enviados {len(data)} bytes a {host}:{port}")
+        print(f"Respuesta del servidor: {respuesta.decode()}")
 
 def main():
     parser = argparse.ArgumentParser(description="Simulador Sensor A")

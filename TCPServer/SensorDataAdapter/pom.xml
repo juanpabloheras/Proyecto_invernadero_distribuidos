@@ -55,11 +55,14 @@
             <version>2.10.1</version>
         </dependency>
 
+
         <!-- RabbitMQ Reactive Messaging -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
         </dependency>
+        
+
     </dependencies>
 
     <build>

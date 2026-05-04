@@ -263,10 +263,10 @@ int main(void)
 
     struct sockaddr_in servidor;
     servidor.sin_family = AF_INET;
-    servidor.sin_port   = htons(8080);
+    servidor.sin_port   = htons(9090);
     inet_pton(AF_INET, "127.0.0.1", &servidor.sin_addr);
 
-    printf("Conectando a 127.0.0.1:8080...\n");
+    printf("Conectando a 127.0.0.1:9090...\n");
     if (connect(sock, (struct sockaddr *)&servidor, sizeof(servidor)) == SOCKET_ERROR) {
         printf("Error connect — verifica que el servidor este corriendo\n");
         closesocket(sock);
