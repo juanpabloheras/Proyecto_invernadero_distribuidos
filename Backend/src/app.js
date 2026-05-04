@@ -2,6 +2,8 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
+const swaggerUi = require("swagger-ui-express");
 const errorHandler = require("./middlewares/error.middleware");
 const sensorRoutes = require("./routes/sensor.routes");
 const usuarioRoutes = require("./routes/usuario.routes");
@@ -21,6 +23,20 @@ app.get("/", (req, res) => {
     message: "API del invernadero funcionando",
   });
 });
+
+app.get("/openapi.yaml", (req, res) => {
+  res.sendFile(path.join(__dirname, "../docs/openapi.yaml"));
+});
+
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(null, {
+    swaggerOptions: {
+      url: "/openapi.yaml",
+    },
+  })
+);
 
 app.use("/api/sensores", sensorRoutes);
 app.use("/api/configuraciones-alarma",configuracionAlarmaRoutes );
