@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package alarmas;
+
+service AlarmaNotificacionService {
+    rpc NotificarConfiguracionCreada(ConfiguracionAlarmaCreadaRequest)
+        returns (NotificacionResponse);
+}
+
+message ConfiguracionAlarmaCreadaRequest {
+    int32 idConfiguracionAlarma = 1;
+    string nombreAlarma = 2;
+    string tipoAlarma = 3;
+    string operador = 4;
+    double valorCritico = 5;
+    bool activa = 6;
+}
+
+message NotificacionResponse {
+    bool ok = 1;
+    string message = 2;
+}

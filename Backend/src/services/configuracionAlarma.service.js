@@ -1,5 +1,6 @@
 const configuracionAlarmaDao = require('../data/configuracionAlarma.dao');
 const AppError = require('../utils/AppError');
+const notificacionesGrpcClient = require("../grpc/alarmaNotificacion.client");
 
 const obtenerConfiguracionesAlarmas = async (query) => {
     const page = parseInt(query.page) || 1;
@@ -71,8 +72,22 @@ const crearConfiguracionAlarma = async (data) => {
         throw new AppError('Valor crítico debe ser un número', 400);
     }
 
-    return await configuracionAlarmaDao.crear(data);
+    const nuevaConfiguracion = await configuracionAlarmaDao.crear(data);
 
+    try{
+        await notificacionesGrpcClient.notificarConfiguracionAlarmaCreada({
+            idConfiguracionAlarma: nuevaConfiguracion.idConfiguracionAlarma,
+            nombreAlarma: nuevaConfiguracion.nombreAlarma,
+            tipoAlarma: nuevaConfiguracion.tipoAlarma,
+            operador: nuevaConfiguracion.operador,
+            valorCritico: nuevaConfiguracion.valorCritico,
+            activa: nuevaConfiguracion.activa
+        });
+    } catch (error) {
+        console.error("No se pudo notificar por gRPC la creación de alarma " + error.message);
+    }
+
+    return nuevaConfiguracion;
 };
 
 const obtenerConfiguracionAlarmaPorId = async (id) => {

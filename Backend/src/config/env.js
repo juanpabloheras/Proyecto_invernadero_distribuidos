@@ -8,5 +8,9 @@ module.exports = {
     password: process.env.DB_PASSWORD || 'password',
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 3306,
+  },
+  grpc: {
+    alarmaUrl: process.env.ALARMA_GRPC_URL || "localhost:50051",
+    timeoutMs: Number(process.env.ALARMA_GRPC_TIMEOUT_MS) || 3000,
   }
 };
