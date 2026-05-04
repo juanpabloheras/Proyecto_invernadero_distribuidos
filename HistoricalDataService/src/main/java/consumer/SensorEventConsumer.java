@@ -28,7 +28,7 @@ public class SensorEventConsumer {
         try {
             SensorEvent event = gson.fromJson(json, SensorEvent.class);
 
-            if (eventosYaProcesados.contains(event.getEventId()) || !"sensorReadingEvent".equals(event.getEventType())) {
+            if (eventosYaProcesados.contains(event.getEventId()) || !"sensor.lectura.registrada".equals(event.getEventType())) {
                 return;
             }
             eventosYaProcesados.add(event.getEventId());
