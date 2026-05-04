@@ -6,6 +6,8 @@ import SensorAdapter.SensorAdapterB;
 import SensorAdapter.SensorAdapterC;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.itson.adapter.messaging.RabbitMQPublisher;
 import org.itson.adapter.model.SensorEvent;
 import java.util.UUID;
 
@@ -19,6 +21,9 @@ import java.util.Map;
  */
 @ApplicationScoped
 public class PacketProcessor {
+
+    @Inject
+    RabbitMQPublisher rabbitMQPublisher;
 
     // HashMap de las diferentes clases de adapter que tiene
     // La llave es el tipo de protocolo que se usa en el sensor para usar el adapter de ese protocolo
@@ -58,11 +63,17 @@ public class PacketProcessor {
             // Generar eventId único
             event.setEventId(generarEventId());
 
+            // Generar JSON
+            String eventJson = event.toJson();
+
             // Mostrar evento y JSON
             System.out.println("\n[EVENTO CANONICO] " + event);
             System.out.println("\n[JSON]");
-            System.out.println(event.toJson());
+            System.out.println(eventJson);
             System.out.println();
+
+            // Publicar a RabbitMQ usando eventType como routing key
+            rabbitMQPublisher.publishEvent(eventJson, event.getEventType());
 
             return event;
 

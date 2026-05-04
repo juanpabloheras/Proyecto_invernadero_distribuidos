@@ -13,7 +13,7 @@ import java.util.ArrayList;
  * Estructura del paquete:
  * [0]      version (u8)
  * [1]      comando (u8)
- * [2-3]    longitud (u16 big-endian)
+ * [2-3]    longitud (u16 big-endian)packetProceso
  * [4-15]   sensorId (12 bytes string)
  * [16-23]  timestamp (u64 big-endian)
  * [24-27]  temperatura (float32 big-endian)
