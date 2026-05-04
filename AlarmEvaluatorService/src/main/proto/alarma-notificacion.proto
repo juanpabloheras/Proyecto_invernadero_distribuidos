@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package alarmas;
+
+option java_multiple_files = true;
+option java_package = "itson.mx.alarmevaluatorservice.grpc";
+option java_outer_classname = "AlarmaNotificacionProto";
+
+service AlarmaNotificacionService {
+    rpc NotificarConfiguracionCreada(ConfiguracionAlarmaCreadaRequest)
+        returns (NotificacionResponse);
+
+    rpc ObtenerConfiguracionesActivas(ObtenerConfiguracionesRequest)
+        returns (ConfiguracionesResponse);
+}
+
+message ConfiguracionAlarmaCreadaRequest {
+    int32 idConfiguracionAlarma = 1;
+    string nombreAlarma = 2;
+    string tipoAlarma = 3;
+    string operador = 4;
+    double valorCritico = 5;
+    bool activa = 6;
+}
+
+message NotificacionResponse {
+    bool ok = 1;
+    string message = 2;
+}
+
+message ObtenerConfiguracionesRequest {}
+
+message ConfiguracionAlarma {
+    int32 idConfiguracionAlarma = 1;
+    string nombreAlarma = 2;
+    string tipoAlarma = 3;
+    string operador = 4;
+    double valorCritico = 5;
+    bool activa = 6;
+}
+
+message ConfiguracionesResponse {
+    repeated ConfiguracionAlarma configuraciones = 1;
+}

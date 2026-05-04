@@ -50,6 +50,12 @@ const obtenerPorId = async (id) => {
     });
 };
 
+const obtenerActivas = async () => {
+    return await ConfiguracionAlarma.findAll({
+        where: { activa: true }
+    });
+};
+
 const eliminar = async (id) => {
     const configuracion = await ConfiguracionAlarma.findByPk(id);
 
@@ -65,5 +71,6 @@ module.exports = {
     crear,
     obtenerTodas,
     obtenerPorId,
+    obtenerActivas,
     eliminar
 };

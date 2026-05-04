@@ -101,6 +101,10 @@ const obtenerConfiguracionAlarmaPorId = async (id) => {
     return configuracionAlarma;
 };
 
+const obtenerConfiguracionesActivas = async () => {
+    return await configuracionAlarmaDao.obtenerActivas();
+};
+
 const eliminarConfiguracionAlarma = async (id) => {
 
     const configuracionAlarma = await configuracionAlarmaDao.obtenerPorId(id);
@@ -118,6 +122,7 @@ module.exports = {
     obtenerConfiguracionesAlarmas,
     crearConfiguracionAlarma,
     obtenerConfiguracionAlarmaPorId,
+    obtenerConfiguracionesActivas,
     eliminarConfiguracionAlarma
 };
 

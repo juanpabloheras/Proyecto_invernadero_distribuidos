@@ -12,5 +12,7 @@ module.exports = {
   grpc: {
     alarmaUrl: process.env.ALARMA_GRPC_URL || "localhost:50051",
     timeoutMs: Number(process.env.ALARMA_GRPC_TIMEOUT_MS) || 3000,
+    serverHost: process.env.GRPC_SERVER_HOST || "0.0.0.0",
+    serverPort: Number(process.env.GRPC_SERVER_PORT) || 50052,
   }
 };

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn -version)",
+      "Bash(java -version)",
+      "PowerShell(mvn *)",
+      "PowerShell(winget *)",
+      "PowerShell(Get-Command *)",
+      "PowerShell(Test-Path *)"
+    ]
+  }
+}

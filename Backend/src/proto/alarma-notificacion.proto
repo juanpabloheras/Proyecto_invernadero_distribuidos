@@ -5,6 +5,9 @@ package alarmas;
 service AlarmaNotificacionService {
     rpc NotificarConfiguracionCreada(ConfiguracionAlarmaCreadaRequest)
         returns (NotificacionResponse);
+
+    rpc ObtenerConfiguracionesActivas(ObtenerConfiguracionesRequest)
+        returns (ConfiguracionesResponse);
 }
 
 message ConfiguracionAlarmaCreadaRequest {
@@ -19,4 +22,19 @@ message ConfiguracionAlarmaCreadaRequest {
 message NotificacionResponse {
     bool ok = 1;
     string message = 2;
+}
+
+message ObtenerConfiguracionesRequest {}
+
+message ConfiguracionAlarma {
+    int32 idConfiguracionAlarma = 1;
+    string nombreAlarma = 2;
+    string tipoAlarma = 3;
+    string operador = 4;
+    double valorCritico = 5;
+    bool activa = 6;
+}
+
+message ConfiguracionesResponse {
+    repeated ConfiguracionAlarma configuraciones = 1;
 }
