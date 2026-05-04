@@ -1,8 +1,0 @@
-SensorAdapter\SensorAdapterC.class
-org\itson\adapter\model\SensorEvent.class
-org\itson\adapter\tcp\TcpServerVerticle.class
-SensorAdapter\ISensorAdapter.class
-org\itson\adapter\service\PacketProcessor.class
-SensorAdapter\SensorAdapterB.class
-org\itson\adapter\messaging\RabbitMQPublisher.class
-SensorAdapter\SensorAdapterA.class
