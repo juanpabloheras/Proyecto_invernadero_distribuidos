@@ -25,3 +25,4 @@ logs/
 coverage/
 /Backend/nbproject/private/
 /NotificadorAlarmas/target/
+*.jar
