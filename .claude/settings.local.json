@@ -6,7 +6,13 @@
       "PowerShell(mvn *)",
       "PowerShell(winget *)",
       "PowerShell(Get-Command *)",
-      "PowerShell(Test-Path *)"
+      "PowerShell(Test-Path *)",
+      "Bash(mvn -q compile)",
+      "Bash(command -v mvn)",
+      "Bash(command -v mvnw)",
+      "Bash(command -v ./mvnw)",
+      "Bash(mvn *)",
+      "PowerShell(Write-Output \\(Get-Location\\).Path; Write-Output \\(Test-Path AlarmEvaluatorService\\\\pom.xml\\); Write-Output \\(Test-Path .\\\\pom.xml\\))"
     ]
   }
 }
