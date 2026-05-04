@@ -23,3 +23,5 @@ logs/
 
 # Opcional (recomendado)
 coverage/
+/TCPServer/TcpSensorServer/target/
+/TCPServer/SensorDataAdapter/target/
