@@ -20,7 +20,7 @@ public class LecturaConsumer {
     AlarmaPublisher alarmaPublisher;
     
     
-    @Incoming("lecturas-in")
+    @Incoming("sensor-readings")
     public void consumir(String mensaje) {
         System.out.println("Lectura recibida: " + mensaje);
         
