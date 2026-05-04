@@ -1,6 +1,0 @@
-consumer\SensorEventConsumer.class
-service\SensorDataService.class
-entidades\SensorData.class
-repository\SensorDataRepository.class
-consumer\SensorEventConsumer$SensorEvent.class
-valdez\alejandro\historicaldataservice\HistoricalDataService.class

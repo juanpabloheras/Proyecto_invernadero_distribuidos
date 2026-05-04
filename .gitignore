@@ -21,9 +21,13 @@ logs/
 # OS
 .DS_Store
 
-# Opcional (recomendado)
+# Coverage
 coverage/
-/Backend/nbproject/private/
-/NotificadorAlarmas/target/
+
+# Java / Maven / Quarkus
 *.jar
-TCPServer/SensorDataAdapter/target/SensorDataAdapter-dev.jar
+*.class
+*.war
+target/
+**/target/
+/Backend/nbproject/private/
