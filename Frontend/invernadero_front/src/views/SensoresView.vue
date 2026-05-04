@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { getSensores } from '../services/sensores-service'
+import { addSensor, deleteSensor, getSensores } from '../services/Sensores-service'
+import SensorDeleteModal from '../components/SensorDeleteModal.vue'
+import SensorFormModal from '../components/SensorFormModal.vue'
 import {
   Search,
   Plus,
@@ -16,6 +18,12 @@ const itemsPerPage = 6
 const sensors = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
+const modalMode = ref(null)
+const selectedSensor = ref(null)
+
+const isSensorFormOpen = computed(() =>
+  modalMode.value === 'create' || modalMode.value === 'edit'
+)
 
 async function loadSensores() {
   try {
@@ -104,16 +112,50 @@ function goToPage(page) {
 }
 
 function onAddSensor() {
-  console.log('Abrir modal o navegar a formulario para nuevo sensor')
+  selectedSensor.value = null
+  modalMode.value = 'create'
 }
 
 function onEdit(sensor) {
-  console.log('Editar sensor:', sensor)
+  selectedSensor.value = sensor
+  modalMode.value = 'edit'
 }
 
 function onDelete(sensor) {
-  console.log('Eliminar sensor:', sensor)
+  selectedSensor.value = sensor
+  modalMode.value = 'delete'
 }
+
+function closeModal() {
+  modalMode.value = null
+  selectedSensor.value = null
+}
+
+async function saveSensor(sensorData) {
+  if (modalMode.value === 'create') {
+    await addSensor({
+      nombre: sensorData.nombre,
+      tipo: sensorData.tipo
+    })
+  }
+
+  await loadSensores()
+
+
+  closeModal()
+}
+
+async function confirmDeleteSensor() {
+  if (!selectedSensor.value) return
+
+  await deleteSensor(selectedSensor.value.idSensor)
+
+  await loadSensores()
+
+  closeModal()
+}
+
+
 </script>
 
 <template>
@@ -128,11 +170,7 @@ function onDelete(sensor) {
       <div class="toolbar">
         <div class="search-box">
           <Search :size="16" />
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Busca sensores por nombre o ID..."
-          />
+          <input v-model="search" type="text" placeholder="Busca sensores por nombre o ID..." />
         </div>
 
         <button class="add-button" @click="onAddSensor">
@@ -175,30 +213,19 @@ function onDelete(sensor) {
 
               <td>
                 <div class="type-cell">
-                  <component
-                    :is="getTypeIcon(sensor.tipo)"
-                    :size="16"
-                    class="type-icon"
-                  />
+                  <component :is="getTypeIcon(sensor.tipo)" :size="16" class="type-icon" />
                   <span>{{ getTypeLabel(sensor.tipo) }}</span>
                 </div>
               </td>
 
               <td class="status-cell">
-                <span
-                  class="status-badge"
-                  :class="sensor.activo ? 'active' : 'inactive'"
-                >
+                <span class="status-badge" :class="sensor.activo ? 'active' : 'inactive'">
                   {{ sensor.activo ? 'ACTIVO' : 'INACTIVO' }}
                 </span>
               </td>
 
               <td class="actions-cell">
                 <div class="actions">
-                  <button class="icon-btn" @click="onEdit(sensor)">
-                    <Pencil :size="15" />
-                  </button>
-
                   <button class="icon-btn" @click="onDelete(sensor)">
                     <Trash2 :size="15" />
                   </button>
@@ -223,13 +250,8 @@ function onDelete(sensor) {
             ‹
           </button>
 
-          <button
-            v-for="page in totalPages"
-            :key="page"
-            class="page-number"
-            :class="{ active: page === currentPage }"
-            @click="goToPage(page)"
-          >
+          <button v-for="page in totalPages" :key="page" class="page-number" :class="{ active: page === currentPage }"
+            @click="goToPage(page)">
             {{ page }}
           </button>
 
@@ -240,7 +262,11 @@ function onDelete(sensor) {
       </div>
     </section>
 
-    
+    <SensorFormModal :is-open="isSensorFormOpen" :mode="modalMode" :sensor="selectedSensor" @close="closeModal"
+      @save="saveSensor" />
+
+    <SensorDeleteModal :is-open="modalMode === 'delete'" :sensor="selectedSensor" @close="closeModal"
+      @confirm="confirmDeleteSensor" />
   </section>
 </template>
 
