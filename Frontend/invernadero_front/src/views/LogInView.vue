@@ -17,7 +17,6 @@
               <input
                 v-model="email"
                 type="email"
-                placeholder="grower@greenhouse.ai"
                 autocomplete="email"
               />
               <span class="input-icon">@</span>
@@ -30,7 +29,6 @@
               <input
                 v-model="password"
                 type="password"
-                placeholder="••••••••••••"
                 autocomplete="current-password"
               />
               
