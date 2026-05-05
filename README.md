@@ -8,10 +8,12 @@ El sistema recibe datos desde dispositivos físicos a través de un adaptador TC
 - [Tecnologías](#tecnologías)
 - [Prerrequisitos](#prerrequisitos)
 - [Datos de prueba e inserts](#datos-de-prueba-e-inserts)
+- [Variables de entorno](#variables-de-entorno)
 - [Pasos para correr la aplicación](#pasos-para-correr-la-aplicación)
 - [Mensajería](#mensajería)
 - [Problemas comunes](#problemas-comunes)
 - [Equipo de desarrollo](#equipo-de-desarrollo)
+
 
 
 ## Arquitectura
@@ -84,6 +86,36 @@ Usuarios de prueba:
 ### MongoDB - HistoricalDataService
 
 Las lecturas historicas normalmente se generan al correr los sensores y pasar por RabbitMQ. 
+
+
+### Variables de entorno
+Antes de correr el backend  es necesario crear un archivo `.env` dentro de la carpeta `Backend`
+
+El backend requiere las siguientes variables de entorno:
+- `PORT` → Puerto donde se ejecuta la API backend
+- `DB_NAME` → Nombre de la base de datos MySQL
+- `DB_USER` → Contraseña de MySQL
+- `DB_PASSWORD` → Contraseña de MySQL
+- `DB_HOST` → Host de la base de datos
+- `DB_PORT` → Puerto de MySQL
+- `ALARMA_GRPC_URL` → Dirección del servicio gRPC utilizado para la comunicación con AlarmEvaluatorService
+- `ALARMA_GRPC_TIMEOUT_MS` → Tiempo máximo de espera para llamadas gRPC en milisegundos
+
+
+Ejemplo:
+
+```env
+PORT=3000
+
+DB_NAME=invernadero_db
+DB_USER=usuario_db
+DB_PASSWORD=password_db
+DB_HOST=localhost
+DB_PORT=3306
+
+ALARMA_GRPC_URL=localhost:50051
+ALARMA_GRPC_TIMEOUT_MS=3000
+```
 
 
 ## Pasos para correr la aplicación
