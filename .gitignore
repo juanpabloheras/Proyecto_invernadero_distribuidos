@@ -1,10 +1,16 @@
-# Dependencias
+# Dependencies
 node_modules/
-**/node_modules/
 
-# Builds
+# Build outputs
 dist/
-**/dist/
+target/
+**/target/
+
+# Java artifacts
+*.class
+*.jar
+*.war
+*.ear
 
 # Env
 .env
@@ -14,6 +20,9 @@ dist/
 logs/
 *.log
 
+# Coverage
+coverage/
+
 # IDEs
 .vscode/
 .idea/
@@ -21,9 +30,5 @@ logs/
 # OS
 .DS_Store
 
-# Opcional (recomendado)
-coverage/
-/Backend/nbproject/private/
-/NotificadorAlarmas/target/
-/HistoricalDataService/target/
-/TCPServer/SensorDataAdapter/target/
+# NetBeans (si usas)
+nbproject/private/
