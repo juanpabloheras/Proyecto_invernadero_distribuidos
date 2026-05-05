@@ -25,3 +25,5 @@ logs/
 coverage/
 /Backend/nbproject/private/
 /NotificadorAlarmas/target/
+/HistoricalDataService/target/
+/TCPServer/SensorDataAdapter/target/
