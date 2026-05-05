@@ -50,6 +50,50 @@ public class ConfiguracionCache {
         return lista == null ? Collections.emptyList() : lista;
     }
 
+    /**
+     * Inserta una config nueva o actualiza una existente (por idConfiguracionAlarma).
+     * Si la config llega con activa=false, queda removida del caché.
+     *
+     * Es seguro llamarlo mientras LecturaConsumer está leyendo: las listas internas
+     * son inmutables, y el reemplazo en el map es atómico (ConcurrentHashMap.put).
+     */
+    public void agregarOActualizar(ConfiguracionAlarma config) {
+        int id = config.getIdConfiguracionAlarma();
+
+        // 1) Remover el id de cualquier lista donde estuviera.
+        //    Cubre el caso "ya existía" y el caso "cambió de tipoAlarma".
+        for (Map.Entry<String, List<ConfiguracionAlarma>> e : porTipo.entrySet()) {
+            List<ConfiguracionAlarma> sinEsteId = new ArrayList<>();
+            for (ConfiguracionAlarma c : e.getValue()) {
+                if (c.getIdConfiguracionAlarma() != id) {
+                    sinEsteId.add(c);
+                }
+            }
+            if (sinEsteId.size() != e.getValue().size()) {
+                if (sinEsteId.isEmpty()) {
+                    porTipo.remove(e.getKey());
+                } else {
+                    porTipo.put(e.getKey(), List.copyOf(sinEsteId));
+                }
+            }
+        }
+
+        // 2) Si llegó inactiva, ya quedó fuera. Terminamos.
+        if (!config.getActiva()) {
+            return;
+        }
+
+        // 3) Activa: la agregamos a la lista de su tipo (key en MAYÚSCULAS).
+        String key = normalizar(config.getTipoAlarma());
+        List<ConfiguracionAlarma> actual = porTipo.get(key);
+        List<ConfiguracionAlarma> nueva = new ArrayList<>();
+        if (actual != null) {
+            nueva.addAll(actual);
+        }
+        nueva.add(config);
+        porTipo.put(key, List.copyOf(nueva));
+    }
+
     private static String normalizar(String tipoAlarma) {
         return tipoAlarma == null ? "" : tipoAlarma.trim().toUpperCase();
     }
