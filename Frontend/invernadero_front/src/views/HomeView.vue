@@ -1,13 +1,14 @@
 <script setup>
+import { onMounted, ref } from 'vue'
+import { getAlarmas } from '../services/alarmas-service.js'
+import { getSensores } from '../services/sensores-service.js'
 import {
   Bell,
   Settings,
   TrendingUp,
   Clock,
   Thermometer,
-  Droplets,
-  AlertTriangle,
-  CheckCircle
+  Droplets
 } from 'lucide-vue-next'
 
 import {
@@ -34,6 +35,37 @@ ChartJS.register(
   CategoryScale,
   Filler
 )
+
+const sensoresActivos = ref(0)
+const totalAlarmas = ref(0)
+const statsError = ref('')
+
+async function loadHomeStats() {
+  try {
+    statsError.value = ''
+
+    const [sensoresResponse, alarmasResponse] = await Promise.all([
+      getSensores({
+        page: 1,
+        limit: 1,
+        activo: true
+      }),
+      getAlarmas({
+        page: 1,
+        limit: 1
+      })
+    ])
+
+    sensoresActivos.value = sensoresResponse.data.total
+    totalAlarmas.value = alarmasResponse.data.total
+  } catch (error) {
+    statsError.value = error.message
+  }
+}
+
+onMounted(() => {
+  loadHomeStats()
+})
 
 const chartData = {
   labels: ['06:00 AM', '10:00 AM', '02:00 PM', '06:00 PM', '10:00 PM'],
@@ -131,7 +163,7 @@ const chartOptions = {
           <p class="stat-label">Sensores activos</p>
 
           <div class="stat-value-row">
-            <h2>23</h2>
+            <h2>{{ sensoresActivos }}</h2>
           </div>
         </div>
       </article>
@@ -142,29 +174,17 @@ const chartOptions = {
         </div>
 
         <div>
-          <p class="stat-label">Alarmas activas</p>
+          <p class="stat-label">Alarmas registradas</p>
 
           <div class="stat-value-row">
-            <h2>8</h2>
+            <h2>{{ totalAlarmas }}</h2>
           </div>
         </div>
       </article>
 
-      <article class="stat-card">
-        <div class="stat-icon alert">
-          <AlertTriangle :size="20" />
-        </div>
-
-        <div>
-          <p class="stat-label">Alertas Activas</p>
-
-          <div class="stat-value-row">
-            <h2 class="danger-number">2</h2>
-            <span class="danger-text">Atención</span>
-          </div>
-        </div>
-      </article>
     </section>
+
+    <p v-if="statsError" class="error-message">{{ statsError }}</p>
 
     <section class="chart-card">
       <div class="chart-header">
@@ -238,7 +258,7 @@ const chartOptions = {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 18px;
   margin-bottom: 28px;
 }
@@ -272,11 +292,6 @@ const chartOptions = {
   color: #3b82f6;
 }
 
-.stat-icon.alert {
-  background: #fff1f2;
-  color: #e05262;
-}
-
 .stat-label {
   margin: 0 0 8px;
   font-size: 12px;
@@ -306,14 +321,11 @@ const chartOptions = {
   color: #2fbf71;
 }
 
-.danger-number {
-  color: #cc4357 !important;
-}
-
-.danger-text {
-  font-size: 12px;
-  font-weight: 800;
-  color: #cc4357;
+.error-message {
+  margin: -12px 0 24px;
+  color: #b91c1c;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .chart-card {
