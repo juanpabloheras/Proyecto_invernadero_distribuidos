@@ -34,16 +34,14 @@ watch(
     if (props.mode === 'edit' && props.sensor) {
       form.value = {
         nombre: props.sensor.nombre,
-        tipo: props.sensor.tipo,
-        activo: Boolean(props.sensor.activo)
+        tipo: props.sensor.tipo
       }
       return
     }
 
     form.value = {
       nombre: '',
-      tipo: 'TEMPERATURA',
-      activo: true
+      tipo: 'TEMPERATURA'
     }
   },
   { immediate: true }
@@ -54,9 +52,8 @@ function onSubmit() {
 
   emit('save', {
     nombre: form.value.nombre.trim(),
-    tipo: form.value.tipo,
-    activo: form.value.activo
-  })
+    tipo: form.value.tipo
+    })
 }
 </script>
 
@@ -92,10 +89,7 @@ function onSubmit() {
           </select>
         </label>
 
-        <label class="toggle-field">
-          <input v-model="form.activo" type="checkbox" />
-          <span>Sensor activo</span>
-        </label>
+       
 
         <div class="modal-actions">
           <button class="secondary-button" type="button" @click="emit('close')">
@@ -124,6 +118,7 @@ function onSubmit() {
 
 .sensor-modal {
   width: min(100%, 460px);
+  box-sizing: border-box;
   background: #ffffff;
   border: 1px solid #dce5d9;
   border-radius: 14px;
@@ -186,6 +181,7 @@ function onSubmit() {
 .form-field input,
 .form-field select {
   width: 100%;
+  box-sizing: border-box;
   height: 44px;
   border: 1px solid #d5dfd2;
   border-radius: 10px;

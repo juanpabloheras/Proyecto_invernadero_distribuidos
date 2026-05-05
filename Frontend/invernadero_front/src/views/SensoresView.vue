@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { addSensor, deleteSensor, getSensores } from '../services/Sensores-service'
+import { addSensor, deleteSensor, getSensores } from '../services/sensores-service.js'
 import SensorDeleteModal from '../components/SensorDeleteModal.vue'
 import SensorFormModal from '../components/SensorFormModal.vue'
 import {

@@ -1,4 +1,4 @@
-import { apiRequest } from './Api'
+import { apiRequest } from './api.js'
 
 export function getSensores(params = {}) {
   const query = new URLSearchParams(params).toString()
@@ -19,5 +19,3 @@ export function deleteSensor(id) {
         method: 'DELETE',
     })
 }
-
-

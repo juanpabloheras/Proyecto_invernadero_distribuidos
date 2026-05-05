@@ -1,108 +1,151 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { addAlarma, deleteAlarma, getAlarmas } from '../services/alarmas-service.js'
+import AlarmaDeleteModal from '../components/AlarmaDeleteModal.vue'
 import {
   PlusCircle,
   Bell,
   UserRound,
   Thermometer,
   Droplets,
-  Leaf,
-  Wind
+  Trash2
 } from 'lucide-vue-next'
 
 const nombreAlerta = ref('')
-const sensorSeleccionado = ref('Temperatura - Zona A')
-const operadorSeleccionado = ref('Mayor que')
+const tipoAlarmaSeleccionado = ref('TEMPERATURA')
+const operadorSeleccionado = ref('MAYOR_QUE')
 const valorAlerta = ref('')
-
-const reglas = ref([
-  {
-    id: 1,
-    nombre: 'Humedad crítica',
-    condicion: 'Humedad < 40%',
-    sensor: 'Zona A-1',
-    tipo: 'humidity',
-    activa: true
-  },
-  {
-    id: 2,
-    nombre: 'Advertencia de sobrecalentamiento',
-    condicion: 'Temperatura > 32°C',
-    sensor: 'Zona B-4',
-    tipo: 'temperature',
-    activa: true
-  },
-  {
-    id: 3,
-    nombre: 'Caída nocturna del suelo',
-    condicion: 'Humedad de suelo < 15%',
-    sensor: 'Zona A-2',
-    tipo: 'soil',
-    activa: false
-  },
-  {
-    id: 4,
-    nombre: 'Pico de CO2',
-    condicion: 'CO2 > 1200 ppm',
-    sensor: 'Ventilación principal',
-    tipo: 'air',
-    activa: true
-  }
-])
+const activaSeleccionada = ref(true)
+const reglas = ref([])
+const isLoading = ref(false)
+const errorMessage = ref('')
+const selectedAlarma = ref(null)
+const isDeleteModalOpen = ref(false)
 
 const reglasActivas = computed(() => reglas.value.filter(regla => regla.activa).length)
 const reglasPausadas = computed(() => reglas.value.filter(regla => !regla.activa).length)
 
-function getRuleIcon(tipo) {
+async function loadAlarmas() {
+  try {
+    isLoading.value = true
+    errorMessage.value = ''
+
+    const response = await getAlarmas({
+      page: 1,
+      limit: 100,
+      sort: 'createdAt',
+      order: 'DESC'
+    })
+
+    reglas.value = response.data.data
+  } catch (error) {
+    errorMessage.value = error.message
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadAlarmas()
+})
+
+function getRuleIcon(tipoAlarma) {
   const icons = {
-    humidity: Droplets,
-    temperature: Thermometer,
-    soil: Leaf,
-    air: Wind
+    HUMEDAD: Droplets,
+    TEMPERATURA: Thermometer
   }
 
-  return icons[tipo] || Bell
+  return icons[tipoAlarma] || Bell
 }
 
-function toggleRule(regla) {
-  regla.activa = !regla.activa
+function getTipoLabel(tipoAlarma) {
+  const labels = {
+    HUMEDAD: 'Humedad',
+    TEMPERATURA: 'Temperatura'
+  }
+
+  return labels[tipoAlarma] || tipoAlarma
 }
 
-function guardarReglaAlerta() {
-  if (!nombreAlerta.value.trim() || !valorAlerta.value.trim()) {
-    alert('Completa el nombre y el valor de la alarma')
+function getOperadorLabel(operador) {
+  const labels = {
+    MAYOR_QUE: 'Mayor que',
+    MENOR_QUE: 'Menor que',
+    IGUAL_A: 'Igual a'
+  }
+
+  return labels[operador] || operador
+}
+
+function getOperadorSymbol(operador) {
+  const labels = {
+    MAYOR_QUE: '>',
+    MENOR_QUE: '<',
+    IGUAL_A: '='
+  }
+
+  return labels[operador] || operador
+}
+
+async function guardarReglaAlerta() {
+  const valorCritico = Number(valorAlerta.value)
+
+  if (!nombreAlerta.value.trim() || Number.isNaN(valorCritico)) {
+    errorMessage.value = 'Completa el nombre y el valor de la alarma'
     return
   }
 
-  const nuevaRegla = {
-    id: Date.now(),
-    nombre: nombreAlerta.value,
-    condicion: `${sensorSeleccionado.value.split(' - ')[0]} ${operadorSeleccionado.value === 'Mayor que' ? '>' : '<'} ${valorAlerta.value}`,
-    sensor: sensorSeleccionado.value.split(' - ')[1] || 'Zona A',
-    tipo: sensorSeleccionado.value.toLowerCase().includes('humedad')
-      ? 'humidity'
-      : sensorSeleccionado.value.toLowerCase().includes('suelo')
-        ? 'soil'
-        : 'temperature',
-    activa: true
-  }
+  try {
+    await addAlarma({
+      nombreAlarma: nombreAlerta.value.trim(),
+      tipoAlarma: tipoAlarmaSeleccionado.value,
+      operador: operadorSeleccionado.value,
+      valorCritico,
+      activa: activaSeleccionada.value
+    })
 
-  reglas.value.push(nuevaRegla)
-  limpiarFormulario()
+    await loadAlarmas()
+    limpiarFormulario()
+  } catch (error) {
+    errorMessage.value = error.message
+  }
+}
+
+function openDeleteModal(regla) {
+  selectedAlarma.value = regla
+  isDeleteModalOpen.value = true
+}
+
+function closeDeleteModal() {
+  selectedAlarma.value = null
+  isDeleteModalOpen.value = false
+}
+
+async function confirmarEliminarRegla() {
+  if (!selectedAlarma.value) return
+
+  try {
+    await deleteAlarma(selectedAlarma.value.idConfiguracionAlarma)
+    await loadAlarmas()
+    closeDeleteModal()
+  } catch (error) {
+    errorMessage.value = error.message
+  }
 }
 
 function limpiarFormulario() {
   nombreAlerta.value = ''
-  sensorSeleccionado.value = 'Temperatura - Zona A'
-  operadorSeleccionado.value = 'Mayor que'
+  tipoAlarmaSeleccionado.value = 'TEMPERATURA'
+  operadorSeleccionado.value = 'MAYOR_QUE'
   valorAlerta.value = ''
+  activaSeleccionada.value = true
 }
 </script>
 
 <template>
   <section class="alerts-page">
     <header class="page-header">
-      <h1>Configuración de alertas</h1>
+      <h1>Configuracion de alertas</h1>
 
       <div class="header-actions">
         <button class="settings-button">
@@ -126,39 +169,61 @@ function limpiarFormulario() {
           </div>
         </div>
 
+        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+
         <div class="rules-table-card">
           <table class="rules-table">
             <thead>
               <tr>
                 <th>Nombre de alerta</th>
-                <th>Condición</th>
-                <th>Sensor</th>
+                <th>Condicion</th>
+                <th>Tipo</th>
                 <th>Estado</th>
+                <th class="actions-heading">Acciones</th>
               </tr>
             </thead>
 
             <tbody>
-              <tr v-for="regla in reglas" :key="regla.id">
-                <td class="rule-name">{{ regla.nombre }}</td>
+              <tr v-if="isLoading">
+                <td colspan="5" class="empty-state">Cargando alarmas...</td>
+              </tr>
 
-                <td>{{ regla.condicion }}</td>
+              <tr v-for="regla in reglas" :key="regla.idConfiguracionAlarma">
+                <td class="rule-name">{{ regla.nombreAlarma }}</td>
+
+                <td>
+                  {{ getOperadorLabel(regla.operador) }}
+                  {{ regla.valorCritico }}
+                  <span class="condition-symbol">
+                    ({{ getOperadorSymbol(regla.operador) }})
+                  </span>
+                </td>
 
                 <td>
                   <div class="sensor-cell">
-                    <component :is="getRuleIcon(regla.tipo)" :size="15" />
-                    <span>{{ regla.sensor }}</span>
+                    <component :is="getRuleIcon(regla.tipoAlarma)" :size="15" />
+                    <span>{{ getTipoLabel(regla.tipoAlarma) }}</span>
                   </div>
                 </td>
 
                 <td>
-                  <button
-                    class="toggle"
-                    :class="{ active: regla.activa }"
-                    @click="toggleRule(regla)"
+                  <span
+                    class="status-badge"
+                    :class="regla.activa ? 'active' : 'inactive'"
                   >
-                    <span></span>
+                    {{ regla.activa ? 'ACTIVA' : 'INACTIVA' }}
+                  </span>
+                </td>
+
+                <td class="actions-cell">
+                  <button class="icon-button" type="button" @click="openDeleteModal(regla)">
+                    <Trash2 :size="16" />
                   </button>
                 </td>
+              </tr>
+
+              <tr v-if="!isLoading && reglas.length === 0">
+                <td colspan="5" class="empty-state">No hay alarmas registradas.</td>
               </tr>
             </tbody>
           </table>
@@ -178,17 +243,15 @@ function limpiarFormulario() {
               <input
                 v-model="nombreAlerta"
                 type="text"
-                placeholder="Ej. Advertencia de poca luz"
+                placeholder="Ej. Temperatura alta"
               />
             </div>
 
             <div class="form-group">
-              <label>Selección de sensor</label>
-              <select v-model="sensorSeleccionado">
-                <option>Temperatura - Zona A</option>
-                <option>Temperatura - Zona B</option>
-                <option>Humedad - Zona A</option>
-                <option>Humedad de suelo - Zona C</option>
+              <label>Tipo de alarma</label>
+              <select v-model="tipoAlarmaSeleccionado">
+                <option value="TEMPERATURA">Temperatura</option>
+                <option value="HUMEDAD">Humedad</option>
               </select>
             </div>
 
@@ -196,8 +259,9 @@ function limpiarFormulario() {
               <div class="form-group">
                 <label>Operador</label>
                 <select v-model="operadorSeleccionado">
-                  <option>Mayor que</option>
-                  <option>Menor que</option>
+                  <option value="MAYOR_QUE">Mayor que</option>
+                  <option value="MENOR_QUE">Menor que</option>
+                  <option value="IGUAL_A">Igual a</option>
                 </select>
               </div>
 
@@ -206,10 +270,16 @@ function limpiarFormulario() {
                 <input
                   v-model="valorAlerta"
                   type="number"
+                  step="0.1"
                   placeholder="0"
                 />
               </div>
             </div>
+
+            <label class="checkbox-field">
+              <input v-model="activaSeleccionada" type="checkbox" />
+              <span>Alarma activa</span>
+            </label>
 
             <div class="divider"></div>
 
@@ -224,32 +294,35 @@ function limpiarFormulario() {
         </section>
       </aside>
     </main>
+
+    <AlarmaDeleteModal
+      :is-open="isDeleteModalOpen"
+      :alarma="selectedAlarma"
+      @close="closeDeleteModal"
+      @confirm="confirmarEliminarRegla"
+    />
   </section>
 </template>
 
 <style scoped>
 .alerts-page {
   width: 100%;
-  min-height: 100vh;
   background: #ffffff;
 }
 
 .page-header {
-  height: 72px;
-  padding: 0 34px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: -32px -32px 32px;
+  margin-bottom: 22px;
 }
 
 .page-header h1 {
   margin: 0;
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 800;
   color: #1f2937;
+  letter-spacing: -0.5px;
 }
 
 .header-actions {
@@ -296,7 +369,7 @@ function limpiarFormulario() {
 
 .section-header h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 800;
   color: #374151;
 }
@@ -327,6 +400,13 @@ function limpiarFormulario() {
   color: #4b5563;
 }
 
+.error-message {
+  margin: 0 0 14px;
+  color: #b91c1c;
+  font-size: 14px;
+  font-weight: 800;
+}
+
 .rules-table-card {
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -342,8 +422,8 @@ function limpiarFormulario() {
 .rules-table th {
   background: #f8fafc;
   color: #6b7280;
-  font-size: 13px;
-  font-weight: 900;
+  font-size: 12px;
+  font-weight: 800;
   text-align: left;
   padding: 16px 22px;
 }
@@ -351,7 +431,7 @@ function limpiarFormulario() {
 .rules-table td {
   padding: 20px 22px;
   border-top: 1px solid #e5e7eb;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #4b5563;
 }
@@ -361,6 +441,11 @@ function limpiarFormulario() {
   color: #374151 !important;
 }
 
+.condition-symbol {
+  color: #94a3b8;
+  font-weight: 800;
+}
+
 .sensor-cell {
   display: flex;
   align-items: center;
@@ -368,38 +453,57 @@ function limpiarFormulario() {
 }
 
 .sensor-cell svg {
-  color: #475569;
+  color: #0d8a4d;
   flex-shrink: 0;
 }
 
-.toggle {
-  width: 48px;
-  height: 26px;
-  border: none;
-  border-radius: 999px;
-  background: #cbd5c0;
-  padding: 3px;
-  display: flex;
+.status-badge {
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 108px;
+  height: 30px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.status-badge.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-badge.inactive {
+  background: #f3f4f6;
+  color: #64748b;
+}
+
+.actions-heading,
+.actions-cell {
+  text-align: center !important;
+}
+
+.icon-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  display: inline-grid;
+  place-items: center;
   cursor: pointer;
-  transition: 0.2s ease;
 }
 
-.toggle span {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #ffffff;
-  display: block;
-  transition: 0.2s ease;
+.icon-button:hover {
+  background: #f8fafc;
+  color: #b91c1c;
 }
 
-.toggle.active {
-  background: #48c878;
-}
-
-.toggle.active span {
-  transform: translateX(22px);
+.empty-state {
+  text-align: center;
+  color: #94a3b8 !important;
+  font-weight: 700 !important;
 }
 
 .create-panel {
@@ -425,7 +529,7 @@ function limpiarFormulario() {
 
 .form-title h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
   color: #374151;
 }
@@ -443,7 +547,8 @@ function limpiarFormulario() {
   min-width: 0;
 }
 
-.form-group label {
+.form-group label,
+.checkbox-field span {
   font-size: 13px;
   font-weight: 900;
   color: #6b7280;
@@ -475,6 +580,19 @@ function limpiarFormulario() {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 110px);
   gap: 12px;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+}
+
+.checkbox-field input {
+  width: 18px;
+  height: 18px;
+  accent-color: #08783f;
 }
 
 .divider {
@@ -526,11 +644,6 @@ function limpiarFormulario() {
 }
 
 @media (max-width: 760px) {
-  .page-header {
-    margin: -32px -32px 24px;
-    padding: 0 22px;
-  }
-
   .section-header {
     flex-direction: column;
     align-items: flex-start;
@@ -542,7 +655,7 @@ function limpiarFormulario() {
   }
 
   .rules-table {
-    min-width: 720px;
+    min-width: 760px;
   }
 
   .form-row {

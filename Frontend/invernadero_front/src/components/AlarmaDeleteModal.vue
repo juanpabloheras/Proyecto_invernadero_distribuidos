@@ -4,7 +4,7 @@ defineProps({
     type: Boolean,
     default: false
   },
-  sensor: {
+  alarma: {
     type: Object,
     default: null
   }
@@ -15,10 +15,10 @@ const emit = defineEmits(['close', 'confirm'])
 
 <template>
   <div v-if="isOpen" class="modal-backdrop" @click.self="emit('close')">
-    <section class="sensor-modal delete-modal">
+    <section class="alarm-modal">
       <header class="modal-header">
         <div>
-          <h2>Eliminar sensor</h2>
+          <h2>Eliminar alarma</h2>
         </div>
 
         <button class="modal-close" type="button" @click="emit('close')">
@@ -28,7 +28,7 @@ const emit = defineEmits(['close', 'confirm'])
 
       <p class="delete-copy">
         Estas a punto de eliminar
-        <strong>{{ sensor?.nombre }}</strong>.
+        <strong>{{ alarma?.nombreAlarma }}</strong>.
       </p>
 
       <div class="modal-actions">
@@ -55,8 +55,9 @@ const emit = defineEmits(['close', 'confirm'])
   padding: 24px;
 }
 
-.sensor-modal {
+.alarm-modal {
   width: min(100%, 420px);
+  box-sizing: border-box;
   background: #ffffff;
   border: 1px solid #dce5d9;
   border-radius: 14px;
