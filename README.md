@@ -57,7 +57,8 @@ El sistema sigue un enfoque orientado a eventos, con microservicios utilizando R
     Verficamos que Docker este arriba con
    ```bash 
     docker ps
-    ``` Y deberíamos ver algo como lo siguiente si es correcto
+    ```
+   Y deberíamos ver algo como lo siguiente si es correcto
 
     ```bash
     0.0.0.0:5672->5672/tcp   0.0.0.0:15672->15672/tcp
