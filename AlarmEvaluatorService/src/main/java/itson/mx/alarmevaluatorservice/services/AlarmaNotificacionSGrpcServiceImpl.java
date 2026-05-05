@@ -6,11 +6,14 @@ package itson.mx.alarmevaluatorservice.services;
 
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
+import itson.mx.alarmevaluatorservice.cache.ConfiguracionCache;
 import itson.mx.alarmevaluatorservice.grpc.AlarmaNotificacionService;
+import itson.mx.alarmevaluatorservice.grpc.ConfiguracionAlarma;
 import itson.mx.alarmevaluatorservice.grpc.ConfiguracionAlarmaCreadaRequest;
 import itson.mx.alarmevaluatorservice.grpc.ConfiguracionesResponse;
 import itson.mx.alarmevaluatorservice.grpc.NotificacionResponse;
 import itson.mx.alarmevaluatorservice.grpc.ObtenerConfiguracionesRequest;
+import jakarta.inject.Inject;
 
 /**
  *
@@ -18,6 +21,9 @@ import itson.mx.alarmevaluatorservice.grpc.ObtenerConfiguracionesRequest;
  */
 @GrpcService
 public class AlarmaNotificacionSGrpcServiceImpl implements AlarmaNotificacionService {
+
+    @Inject
+    ConfiguracionCache configuracionCache;
 
     @Override
     public Uni<NotificacionResponse> notificarConfiguracionCreada(ConfiguracionAlarmaCreadaRequest request) {
@@ -31,6 +37,18 @@ public class AlarmaNotificacionSGrpcServiceImpl implements AlarmaNotificacionSer
         System.out.println("Valor crítico: " + request.getValorCritico());
         System.out.println("Activa: " + request.getActiva());
         System.out.println("====================================");
+
+        if (request.getActiva()) {
+            ConfiguracionAlarma config = ConfiguracionAlarma.newBuilder()
+                    .setIdConfiguracionAlarma(request.getIdConfiguracionAlarma())
+                    .setNombreAlarma(request.getNombreAlarma())
+                    .setTipoAlarma(request.getTipoAlarma())
+                    .setOperador(request.getOperador())
+                    .setValorCritico(request.getValorCritico())
+                    .setActiva(request.getActiva())
+                    .build();
+            configuracionCache.agregarOActualizar(config);
+        }
 
         return Uni.createFrom().item(
                 NotificacionResponse.newBuilder()
