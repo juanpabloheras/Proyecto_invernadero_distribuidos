@@ -54,15 +54,16 @@ El sistema sigue un enfoque orientado a eventos, con microservicios utilizando R
     ```bash
     docker run -d --name rabbitmq_invernadero -p 5672:5672 -p 15672:15672 rabbitmq:3-management
     ```
-    Verficamos que Docker este arriba con ```bash 
+    Verficamos que Docker este arriba con
+   ```bash 
     docker ps
     ``` Y deberíamos ver algo como lo siguiente si es correcto
 
     ```bash
     0.0.0.0:5672->5672/tcp   0.0.0.0:15672->15672/tcp
     ```
-4. Entramos al panel /UI de rabbit en http://localhost:15672 con usuario: **guest** y password: **guest**
-5. Levantamos los consumidores primero (**Antes de correr proyectos, los compilamos** ):
+5. Entramos al panel /UI de rabbit en http://localhost:15672 con usuario: **guest** y password: **guest**
+6. Levantamos los consumidores primero (**Antes de correr proyectos, los compilamos** ):
     - Primero levantamos el backend dirigiendonos a la carpeta `Backend` y ejecutamos los comandos 
     ```bash 
     npm install
@@ -70,8 +71,8 @@ El sistema sigue un enfoque orientado a eventos, con microservicios utilizando R
     ``` 
     Para poder levantar correctamente el backend la base de datos necesita estar creada como **invernadero_db** o como este en el env de Backend `DB_NAME`. Una vez que se haya levantado correctamente el backend, podemos continuar con el siguiente paso:
     - En `AlarmEvaluatorService`, `NotificadorAlarmas` y `HistoricalDataService `ejecutamos los proyectos en NetBeans.
-6. Una vez con los consumidores levantados, podemos revisar en la interfaz de RabbitMQ en el apartado de **Queues and Streams** que se hayan creado las colas `alarm-evaluator.sensor-readings`  y `notificador.alarmas` además de en la sección **Exchanges** que aparezca `invernadero.events`.
-7. Después de que se hayan levantado los consumidores ahora levantamos quien vendría siendo publicador de lecturas corremos el proyecto `SensorDataAdapter`, si se ejecutó correctamente debe mostrar algo como
+7. Una vez con los consumidores levantados, podemos revisar en la interfaz de RabbitMQ en el apartado de **Queues and Streams** que se hayan creado las colas `alarm-evaluator.sensor-readings`  y `notificador.alarmas` además de en la sección **Exchanges** que aparezca `invernadero.events`.
+8. Después de que se hayan levantado los consumidores ahora levantamos quien vendría siendo publicador de lecturas corremos el proyecto `SensorDataAdapter`, si se ejecutó correctamente debe mostrar algo como
 ```bash
 SensorDataAdapter TCP Server iniciado
 Escuchando en: 0.0.0.0:9090
