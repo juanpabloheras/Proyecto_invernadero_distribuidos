@@ -1,5 +1,6 @@
 package service;
 
+import dtos.RespuestaPaginada;
 import entidades.SensorData;
 import entidades.Medicion;
 import repository.SensorDataRepository;
@@ -78,5 +79,31 @@ public class SensorDataService {
             "   Mediciones: %d válidas, %d inválidas%n",
              sensorId, timestampFinal, timestampSource, validas, invalidas
         );
+    }
+    
+    /**
+     * Obtiene todo el historial del invernadero paginado
+     */
+    public RespuestaPaginada<SensorData> obtenerHistorialPaginado(int pagina, int size) {
+        var query = repository.findAll().page(pagina, size);
+        return armarRespuesta(query, pagina);
+    }
+
+    /**
+     * Obtiene el historial de un solo sensor (ej. ESP32-01) paginado
+     */
+    public RespuestaPaginada<SensorData> obtenerHistorialPorSensor(String sensorId, int pagina, int size) {
+        var query = repository.buscarPorSensor(sensorId).page(pagina, size);
+        return armarRespuesta(query, pagina);
+    }
+
+    // Método auxiliar para no repetir código
+    private RespuestaPaginada<SensorData> armarRespuesta(io.quarkus.mongodb.panache.PanacheQuery<SensorData> query, int pagina) {
+        RespuestaPaginada<SensorData> respuesta = new RespuestaPaginada<>();
+        respuesta.datos = query.list();
+        respuesta.paginaActual = pagina;
+        respuesta.totalPaginas = query.pageCount();
+        respuesta.totalRegistros = query.count();
+        return respuesta;
     }
 }
