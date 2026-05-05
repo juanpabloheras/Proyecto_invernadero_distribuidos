@@ -50,7 +50,7 @@ const userInitials = computed(() => {
 })
 
 onMounted(() => {
-  
+
   const storedUser = localStorage.getItem('currentUser')
 
   if (storedUser) {
@@ -118,10 +118,12 @@ const logout = () => {
         <small>{{ sseConectado ? 'En vivo' : 'Sin conexion' }}</small>
       </div>
       <article v-for="notificacion in notificaciones" :key="notificacion.id" class="notification-card">
-        <strong>{{ notificacion.tipoEvento || 'Alarma' }}</strong>
-        <button @click="eliminarNotificacion(notificacion.id)" class="btn-delete">
-          <X :size="16" />
-        </button>
+        <div class="notificacion-card-header">
+          <strong>{{ notificacion.tipoEvento || 'Alarma' }}</strong>
+          <button @click="eliminarNotificacion(notificacion.id)" class="btn-delete">
+            <X :size="16" />
+          </button>
+        </div>
         <p>{{ notificacion.mensaje }}</p>
       </article>
       <p v-if="notificaciones.length === 0" class="notifications-vacia">
@@ -233,7 +235,7 @@ const logout = () => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background-color: #f8fbff ;
+  background-color: #f8fbff;
   margin: 10px;
   border-radius: 5px;
   border: 0.5px solid #e6edf5;
@@ -246,6 +248,13 @@ const logout = () => {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notificacion-card-header {
+  display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
 }
