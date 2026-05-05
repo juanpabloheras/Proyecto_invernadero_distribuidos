@@ -77,7 +77,7 @@ async function handleLogin() {
     })
 
     localStorage.setItem('currentUser', JSON.stringify(response.data))
-    router.push('/')
+    router.push('/home')
   } catch (err) {
     error.value = err.message
   }

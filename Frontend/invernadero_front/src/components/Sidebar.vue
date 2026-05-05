@@ -5,7 +5,7 @@ import { Home, RadioTower, Bell, BarChart3 } from 'lucide-vue-next'
 const menuItems = [
   {
     label: 'Home',
-    path: '/',
+    path: '/home',
     icon: Home
   },
   {
