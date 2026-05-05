@@ -1,6 +1,11 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue'
-import { Home, RadioTower, Bell, BarChart3 } from 'lucide-vue-next'
+import { Home, RadioTower, Bell, BarChart3, X } from 'lucide-vue-next'
+
+const notificaciones = ref([])
+const sseConectado = ref(false)
+let eventSource = null
+
 
 const menuItems = [
   {
@@ -43,12 +48,39 @@ const userInitials = computed(() => {
 })
 
 onMounted(() => {
+  
   const storedUser = localStorage.getItem('currentUser')
 
   if (storedUser) {
     currentUser.value = JSON.parse(storedUser)
   }
+  eventSource = new EventSource('http://localhost:8082/notificaciones/stream')
+
+  eventSource.onopen = () => {
+    sseConectado.value = true
+  }
+
+  eventSource.onmessage = (event) => {
+    const notificacion = JSON.parse(event.data)
+
+    notificaciones.value.unshift({
+      id: crypto.randomUUID(),
+      ...notificacion,
+      fecha: new Date()
+    })
+  }
+
+  eventSource.onerror = () => {
+    sseConectado.value = false
+  }
 })
+
+const eliminarNotificacion = (id) => {
+  notificaciones.value = notificaciones.value.filter(n => n.id !== id)
+}
+const limpiarTodas = () => {
+  notificaciones.value = []
+}
 </script>
 
 <template>
@@ -58,17 +90,32 @@ onMounted(() => {
     </div>
 
     <nav class="sidebar-nav">
-      <RouterLink
-        v-for="item in menuItems"
-        :key="item.path"
-        :to="item.path"
-        class="nav-item"
-        active-class="active"
-      >
+      <RouterLink v-for="item in menuItems" :key="item.path" :to="item.path" class="nav-item" active-class="active">
         <component :is="item.icon" class="nav-icon" :size="18" />
         <span>{{ item.label }}</span>
       </RouterLink>
     </nav>
+
+    <section class="sidebar-notificaciones">
+      <div class="notificaciones-header">
+        <span>Notificaciones</span>
+
+        <button @click="limpiarTodas" class="btn-clear">
+          Limpiar
+        </button>
+        <small>{{ sseConectado ? 'En vivo' : 'Sin conexión' }}</small>
+      </div>
+      <article v-for="notificacion in notificaciones" :key="notificacion.id" class="notification-card">
+        <strong>{{ notificacion.tipoEvento || 'Alarma' }}</strong>
+        <button @click="eliminarNotificacion(notificacion.id)" class="btn-delete">
+          <X :size="16" />
+        </button>
+        <p>{{ notificacion.mensaje }}</p>
+      </article>
+      <p v-if="notificaciones.length === 0" class="notifications-vacia">
+        Sin notificaciones
+      </p>
+    </section>
 
     <div class="sidebar-user">
       <div class="avatar">
@@ -98,7 +145,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   padding: 32px 0 0;
-  overflow-y: auto;
+  overflow-y: hidden;
 }
 
 .sidebar-header {
@@ -163,6 +210,103 @@ onMounted(() => {
   height: 100%;
   background: #35c96f;
   border-radius: 3px 0 0 3px;
+}
+
+.sidebar-notificaciones {
+  padding: 22px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: #f8fbff ;
+  margin: 10px;
+  border-radius: 5px;
+  border: 0.5px solid #e6edf5;
+
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notificaciones-header {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notificaciones-header span {
+  font-size: 23px;
+  font-weight: 700;
+  padding: 10px;
+}
+
+.notificaciones-header small {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.notification-card {
+  background-color: #ffffff;
+  border: 1px solid #e6edf5;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.notification-card strong {
+  display: block;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+
+.notification-card:hover {
+  background-color: #f1f8f4;
+  cursor: pointer;
+}
+
+.notification-card p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #718096;
+}
+
+.notifications-vacia {
+  margin: 0;
+  padding: 0 10px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-delete {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+}
+
+.btn-delete:hover {
+  color: #ef4444;
+}
+
+.btn-clear {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: #43c774;
+  font-weight: 600;
+}
+
+.btn-clear:hover {
+  text-decoration: underline;
 }
 
 .sidebar-user {
