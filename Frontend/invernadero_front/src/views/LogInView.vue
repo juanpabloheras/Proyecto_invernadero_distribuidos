@@ -4,10 +4,6 @@
 
     <section class="form-panel">
       <div class="login-card">
-        <div class="icon-wrap">
-          <span class="icon">🌿</span>
-        </div>
-
         <h2>GreenMonitor</h2>
 
         <form @submit.prevent="handleLogin">
@@ -85,8 +81,6 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
-
 * {
   box-sizing: border-box;
 }
@@ -97,7 +91,6 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'DM Sans', system-ui, sans-serif;
   position: relative;
   overflow: hidden;
 }
@@ -144,25 +137,12 @@ async function handleLogin() {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Icon */
-.icon-wrap {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: #dcfce7;
-  display: grid;
-  place-items: center;
-  margin-bottom: 20px;
-  font-size: 26px;
-  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.28);
-}
-
 h2 {
-  margin: 0 0 6px;
-  font-size: 24px;
+  margin: 0 0 28px;
+  font-size: 32px;
   font-weight: 700;
   color: #111827;
-  letter-spacing: -0.4px;
+  letter-spacing: 0;
 }
 
 .subtitle {
@@ -192,7 +172,6 @@ label {
   letter-spacing: 1px;
   color: #9ca3af;
   margin-bottom: 7px;
-  font-family: 'DM Mono', monospace;
 }
 
 .input-wrap {
@@ -358,7 +337,6 @@ input::placeholder {
   font-size: 11px;
   letter-spacing: 2px;
   color: rgba(255, 255, 255, 0.6);
-  font-family: 'DM Mono', monospace;
   text-transform: uppercase;
 }
 

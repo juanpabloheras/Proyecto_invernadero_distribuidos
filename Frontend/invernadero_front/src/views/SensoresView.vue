@@ -14,7 +14,7 @@ import {
 
 const search = ref('')
 const currentPage = ref(1)
-const itemsPerPage = 6
+const itemsPerPage = 10
 const sensors = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')

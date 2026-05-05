@@ -1,30 +1,32 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue'
-import { Home, RadioTower, Bell, BarChart3, X } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { Home, RadioTower, Bell, BarChart3, X, LogOut } from 'lucide-vue-next'
 
 const notificaciones = ref([])
 const sseConectado = ref(false)
+const router = useRouter()
 let eventSource = null
 
 
 const menuItems = [
   {
-    label: 'Home',
+    label: 'Inicio',
     path: '/home',
     icon: Home
   },
   {
-    label: 'Sensors',
+    label: 'Sensores',
     path: '/sensores',
     icon: RadioTower
   },
   {
-    label: 'Alerts',
+    label: 'Alarmas',
     path: '/alarmas',
     icon: Bell
   },
   {
-    label: 'Reports',
+    label: 'Reportes',
     path: '/reportes',
     icon: BarChart3
   }
@@ -81,6 +83,16 @@ const eliminarNotificacion = (id) => {
 const limpiarTodas = () => {
   notificaciones.value = []
 }
+
+const logout = () => {
+  localStorage.removeItem('currentUser')
+
+  if (eventSource) {
+    eventSource.close()
+  }
+
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -103,7 +115,7 @@ const limpiarTodas = () => {
         <button @click="limpiarTodas" class="btn-clear">
           Limpiar
         </button>
-        <small>{{ sseConectado ? 'En vivo' : 'Sin conexión' }}</small>
+        <small>{{ sseConectado ? 'En vivo' : 'Sin conexion' }}</small>
       </div>
       <article v-for="notificacion in notificaciones" :key="notificacion.id" class="notification-card">
         <strong>{{ notificacion.tipoEvento || 'Alarma' }}</strong>
@@ -126,6 +138,10 @@ const limpiarTodas = () => {
         <strong>{{ userName }}</strong>
         <span>{{ userEmail }}</span>
       </div>
+
+      <button class="logout-button" type="button" @click="logout">
+        <LogOut :size="17" />
+      </button>
     </div>
   </aside>
 </template>
@@ -331,6 +347,8 @@ const limpiarTodas = () => {
 }
 
 .user-info {
+  min-width: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
@@ -345,6 +363,29 @@ const limpiarTodas = () => {
   font-size: 12px;
   color: #94a3b8;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logout-button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #e6edf5;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #718096;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: 0.2s ease;
+  flex-shrink: 0;
+}
+
+.logout-button:hover {
+  color: #b91c1c;
+  border-color: #f0c8c8;
+  background: #fffafa;
 }
 
 @media (max-width: 760px) {

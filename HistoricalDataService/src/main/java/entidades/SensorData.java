@@ -25,4 +25,10 @@ public class SensorData {
 
     // Campo opcional para debugging y auditoría
     public String timestampSource;    // "EVENT" o "AUTO_GENERATED"
+
+    // Campos usados por documentos historicos planos ya existentes en MongoDB
+    public Instant fecha;
+    public String tipoSensor;
+    public String unidad;
+    public Double valor;
 }

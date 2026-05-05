@@ -5,7 +5,6 @@ import AlarmaDeleteModal from '../components/AlarmaDeleteModal.vue'
 import {
   PlusCircle,
   Bell,
-  UserRound,
   Thermometer,
   Droplets,
   Trash2
@@ -17,6 +16,8 @@ const operadorSeleccionado = ref('MAYOR_QUE')
 const valorAlerta = ref('')
 const activaSeleccionada = ref(true)
 const reglas = ref([])
+const currentPage = ref(1)
+const itemsPerPage = 10
 const isLoading = ref(false)
 const errorMessage = ref('')
 const selectedAlarma = ref(null)
@@ -24,6 +25,15 @@ const isDeleteModalOpen = ref(false)
 
 const reglasActivas = computed(() => reglas.value.filter(regla => regla.activa).length)
 const reglasPausadas = computed(() => reglas.value.filter(regla => !regla.activa).length)
+const totalPages = computed(() => {
+  return Math.max(1, Math.ceil(reglas.value.length / itemsPerPage))
+})
+
+const paginatedReglas = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return reglas.value.slice(start, end)
+})
 
 async function loadAlarmas() {
   try {
@@ -38,6 +48,7 @@ async function loadAlarmas() {
     })
 
     reglas.value = response.data.data
+    if (currentPage.value > totalPages.value) currentPage.value = totalPages.value
   } catch (error) {
     errorMessage.value = error.message
   } finally {
@@ -85,6 +96,18 @@ function getOperadorSymbol(operador) {
   }
 
   return labels[operador] || operador
+}
+
+function previousPage() {
+  if (currentPage.value > 1) currentPage.value--
+}
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) currentPage.value++
+}
+
+function goToPage(page) {
+  currentPage.value = page
 }
 
 async function guardarReglaAlerta() {
@@ -146,16 +169,6 @@ function limpiarFormulario() {
   <section class="alerts-page">
     <header class="page-header">
       <h1>Configuracion de alertas</h1>
-
-      <div class="header-actions">
-        <button class="settings-button">
-          Ajustes
-        </button>
-
-        <div class="header-avatar">
-          <UserRound :size="18" />
-        </div>
-      </div>
     </header>
 
     <main class="alerts-layout">
@@ -172,61 +185,87 @@ function limpiarFormulario() {
         <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
         <div class="rules-table-card">
-          <table class="rules-table">
-            <thead>
-              <tr>
-                <th>Nombre de alerta</th>
-                <th>Condicion</th>
-                <th>Tipo</th>
-                <th>Estado</th>
-                <th class="actions-heading">Acciones</th>
-              </tr>
-            </thead>
+          <div class="table-wrapper">
+            <table class="rules-table">
+              <thead>
+                <tr>
+                  <th>Nombre de alerta</th>
+                  <th>Condicion</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th class="actions-heading">Acciones</th>
+                </tr>
+              </thead>
 
-            <tbody>
-              <tr v-if="isLoading">
-                <td colspan="5" class="empty-state">Cargando alarmas...</td>
-              </tr>
+              <tbody>
+                <tr v-if="isLoading">
+                  <td colspan="5" class="empty-state">Cargando alarmas...</td>
+                </tr>
 
-              <tr v-for="regla in reglas" :key="regla.idConfiguracionAlarma">
-                <td class="rule-name">{{ regla.nombreAlarma }}</td>
+                <tr v-for="regla in paginatedReglas" :key="regla.idConfiguracionAlarma">
+                  <td class="rule-name">{{ regla.nombreAlarma }}</td>
 
-                <td>
-                  {{ getOperadorLabel(regla.operador) }}
-                  {{ regla.valorCritico }}
-                  <span class="condition-symbol">
-                    ({{ getOperadorSymbol(regla.operador) }})
-                  </span>
-                </td>
+                  <td>
+                    {{ getOperadorLabel(regla.operador) }}
+                    {{ regla.valorCritico }}
+                    <span class="condition-symbol">
+                      ({{ getOperadorSymbol(regla.operador) }})
+                    </span>
+                  </td>
 
-                <td>
-                  <div class="sensor-cell">
-                    <component :is="getRuleIcon(regla.tipoAlarma)" :size="15" />
-                    <span>{{ getTipoLabel(regla.tipoAlarma) }}</span>
-                  </div>
-                </td>
+                  <td>
+                    <div class="sensor-cell">
+                      <component :is="getRuleIcon(regla.tipoAlarma)" :size="15" />
+                      <span>{{ getTipoLabel(regla.tipoAlarma) }}</span>
+                    </div>
+                  </td>
 
-                <td>
-                  <span
-                    class="status-badge"
-                    :class="regla.activa ? 'active' : 'inactive'"
-                  >
-                    {{ regla.activa ? 'ACTIVA' : 'INACTIVA' }}
-                  </span>
-                </td>
+                  <td>
+                    <span
+                      class="status-badge"
+                      :class="regla.activa ? 'active' : 'inactive'"
+                    >
+                      {{ regla.activa ? 'ACTIVA' : 'INACTIVA' }}
+                    </span>
+                  </td>
 
-                <td class="actions-cell">
-                  <button class="icon-button" type="button" @click="openDeleteModal(regla)">
-                    <Trash2 :size="16" />
-                  </button>
-                </td>
-              </tr>
+                  <td class="actions-cell">
+                    <button class="icon-button" type="button" @click="openDeleteModal(regla)">
+                      <Trash2 :size="16" />
+                    </button>
+                  </td>
+                </tr>
 
-              <tr v-if="!isLoading && reglas.length === 0">
-                <td colspan="5" class="empty-state">No hay alarmas registradas.</td>
-              </tr>
-            </tbody>
-          </table>
+                <tr v-if="!isLoading && paginatedReglas.length === 0">
+                  <td colspan="5" class="empty-state">No hay alarmas registradas.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-footer">
+            <p>Mostrando {{ paginatedReglas.length }} de {{ reglas.length }} alarmas</p>
+
+            <div class="pagination">
+              <button class="page-arrow" @click="previousPage" :disabled="currentPage === 1">
+                &lsaquo;
+              </button>
+
+              <button
+                v-for="page in totalPages"
+                :key="page"
+                class="page-number"
+                :class="{ active: page === currentPage }"
+                @click="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+
+              <button class="page-arrow" @click="nextPage" :disabled="currentPage === totalPages">
+                &rsaquo;
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -325,31 +364,6 @@ function limpiarFormulario() {
   letter-spacing: -0.5px;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.settings-button {
-  border: none;
-  background: transparent;
-  font-size: 14px;
-  font-weight: 800;
-  color: #64748b;
-  cursor: pointer;
-}
-
-.header-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #dcfce7;
-  color: #15803d;
-  display: grid;
-  place-items: center;
-}
-
 .alerts-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -408,32 +422,43 @@ function limpiarFormulario() {
 }
 
 .rules-table-card {
+  background: #eef5ec;
+  border: 1px solid #dde8da;
+  border-radius: 16px;
+  padding: 22px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  overflow: hidden;
+  border: 1px solid #dce5d9;
+  border-radius: 14px 14px 0 0;
 }
 
 .rules-table {
   width: 100%;
   border-collapse: collapse;
+  background: #ffffff;
 }
 
 .rules-table th {
-  background: #f8fafc;
+  background: #ffffff;
   color: #6b7280;
   font-size: 12px;
   font-weight: 800;
   text-align: left;
-  padding: 16px 22px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5ece3;
+  vertical-align: middle;
 }
 
 .rules-table td {
-  padding: 20px 22px;
-  border-top: 1px solid #e5e7eb;
+  padding: 20px;
+  border-bottom: 1px solid #e5ece3;
   font-size: 14px;
   font-weight: 600;
-  color: #4b5563;
+  color: #374151;
+  vertical-align: middle;
 }
 
 .rule-name {
@@ -504,6 +529,56 @@ function limpiarFormulario() {
   text-align: center;
   color: #94a3b8 !important;
   font-weight: 700 !important;
+}
+
+.table-footer {
+  background: #ffffff;
+  border: 1px solid #dce5d9;
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.table-footer p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-number,
+.page-arrow {
+  min-width: 32px;
+  height: 32px;
+  border: 1px solid #d6dfd3;
+  background: #ffffff;
+  border-radius: 8px;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.page-number.active {
+  background: #0a7a43;
+  color: #ffffff;
+  border-color: #0a7a43;
+}
+
+.page-arrow:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .create-panel {
@@ -656,6 +731,11 @@ function limpiarFormulario() {
 
   .rules-table {
     min-width: 760px;
+  }
+
+  .table-footer {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .form-row {

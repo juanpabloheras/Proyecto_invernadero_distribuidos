@@ -7,6 +7,7 @@ El sistema recibe datos desde dispositivos físicos a través de un adaptador TC
 - [Arquitectura](#arquitectura)
 - [Tecnologías](#tecnologías)
 - [Prerrequisitos](#prerrequisitos)
+- [Datos de prueba e inserts](#datos-de-prueba-e-inserts)
 - [Pasos para correr la aplicación](#pasos-para-correr-la-aplicación)
 - [Mensajería](#mensajería)
 - [Problemas comunes](#problemas-comunes)
@@ -46,6 +47,45 @@ El sistema sigue un enfoque orientado a eventos, con microservicios utilizando R
 - Python (para simuladores)
 
 
+## Datos de prueba e inserts
+
+Antes de probar el frontend y los endpoints del backend, se recomienda cargar datos base en MySQL y, si se desea probar reportes o graficas sin mandar lecturas desde sensores, tambien cargar lecturas historicas en MongoDB.
+
+### MySQL - Backend
+
+La base de datos del backend debe existir con el nombre configurado en `Backend/.env`, normalmente:
+
+```sql
+CREATE DATABASE IF NOT EXISTS invernadero_db;
+```
+
+Despues de crear la base, ejecutar el script de datos de prueba:
+
+```text
+Backend/docs/db/seed_test_data.sql
+```
+
+Desde MySQL Workbench:
+
+1. Abrir el archivo `Backend/docs/db/seed_test_data.sql`
+2. Verificar que la primera linea sea `USE invernadero_db;`
+3. Ejecutar todo el script
+
+El script inserta usuarios, sensores, medios de notificacion, configuraciones de alarma y la relacion entre alarmas y medios. Usa `ON DUPLICATE KEY UPDATE`, por lo que se puede ejecutar mas de una vez sin duplicar registros.
+
+Usuarios de prueba:
+
+| Correo | Password |
+|------|------|
+| `admin@test.com` | `Admin123` |
+| `pedro@test.com` | `Password123` |
+| `operador@test.com` | `Invernadero123` |
+
+### MongoDB - HistoricalDataService
+
+Las lecturas historicas normalmente se generan al correr los sensores y pasar por RabbitMQ. 
+
+
 ## Pasos para correr la aplicación
 1. Abrir Docker Desktop
 2. Detener RabbitMQ de manera local
@@ -72,7 +112,7 @@ El sistema sigue un enfoque orientado a eventos, con microservicios utilizando R
     ``` 
     Para poder levantar correctamente el backend la base de datos necesita estar creada como **invernadero_db** o como este en el env de Backend `DB_NAME`. Una vez que se haya levantado correctamente el backend, podemos continuar con el siguiente paso:
     - En `AlarmEvaluatorService`, `NotificadorAlarmas` y `HistoricalDataService `ejecutamos los proyectos en NetBeans.
-7. Una vez con los consumidores levantados, podemos revisar en la interfaz de RabbitMQ en el apartado de **Queues and Streams** que se hayan creado las colas `alarm-evaluator.sensor-readings`  y `notificador.alarmas` además de en la sección **Exchanges** que aparezca `invernadero.events`.
+7. Una vez con los consumidores levantados, podemos revisar en la interfaz de RabbitMQ en el apartado de **Queues and Streams** que se hayan creado las colas `alarm-evaluator.sensor-readings`, `historical.sensor-readings` y `notificador.alarmas` además de en la sección **Exchanges** que aparezca `invernadero.events`.
 8. Después de que se hayan levantado los consumidores ahora levantamos quien vendría siendo publicador de lecturas corremos el proyecto `SensorDataAdapter`, si se ejecutó correctamente debe mostrar algo como
 ```bash
 SensorDataAdapter TCP Server iniciado
@@ -121,6 +161,7 @@ Principales routing keys:
 Colas:
 
 - `alarm-evaluator.sensor-readings`
+- `historical.sensor-readings`
 - `notificador.alarmas`
     
 ## Problemas comunes
