@@ -1,14 +1,14 @@
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { getAlarmas } from '../services/alarmas-service.js'
 import { getSensores } from '../services/sensores-service.js'
 import {
-  Bell,
-  Settings,
   TrendingUp,
   Clock,
   Thermometer,
-  Droplets
+  Droplets,
+  LogOut
 } from 'lucide-vue-next'
 
 import {
@@ -39,6 +39,7 @@ ChartJS.register(
 const sensoresActivos = ref(0)
 const totalAlarmas = ref(0)
 const statsError = ref('')
+const router = useRouter()
 
 async function loadHomeStats() {
   try {
@@ -66,6 +67,11 @@ async function loadHomeStats() {
 onMounted(() => {
   loadHomeStats()
 })
+
+function logout() {
+  localStorage.removeItem('currentUser')
+  router.push('/login')
+}
 
 const chartData = {
   labels: ['06:00 AM', '10:00 AM', '02:00 PM', '06:00 PM', '10:00 PM'],
@@ -143,12 +149,9 @@ const chartOptions = {
       </div>
 
       <div class="header-actions">
-        <button class="icon-button">
-          <Bell :size="20" />
-        </button>
-
-        <button class="icon-button">
-          <Settings :size="20" />
+        <button class="logout-button" @click="logout">
+          <LogOut :size="18" />
+          Cerrar sesion
         </button>
       </div>
     </header>
@@ -238,22 +241,26 @@ const chartOptions = {
   gap: 14px;
 }
 
-.icon-button {
-  width: 38px;
-  height: 38px;
-  border: none;
-  border-radius: 12px;
-  background: transparent;
-  color: #94a3b8;
-  display: grid;
-  place-items: center;
+.logout-button {
+  height: 42px;
+  border: 1px solid #d6dfd3;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #4b5563;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
   cursor: pointer;
   transition: 0.2s ease;
 }
 
-.icon-button:hover {
-  background: #f1f5f9;
-  color: #334155;
+.logout-button:hover {
+  background: #f8fafc;
+  color: #b91c1c;
+  border-color: #f0c8c8;
 }
 
 .stats-grid {

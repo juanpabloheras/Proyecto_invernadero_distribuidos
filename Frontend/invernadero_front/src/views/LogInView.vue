@@ -54,6 +54,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { loginUsuario } from '../services/usuarios-service.js'
 
 const router = useRouter()
 const email = ref('')
@@ -61,7 +62,7 @@ const password = ref('')
 const remember = ref(false)
 const error = ref('')
 
-function handleLogin() {
+async function handleLogin() {
   error.value = ''
 
   if (!email.value || !password.value) {
@@ -69,7 +70,17 @@ function handleLogin() {
     return
   }
 
-  router.push('/')
+  try {
+    const response = await loginUsuario({
+      correo: email.value,
+      contrasenia: password.value
+    })
+
+    localStorage.setItem('currentUser', JSON.stringify(response.data))
+    router.push('/home')
+  } catch (err) {
+    error.value = err.message
+  }
 }
 </script>
 

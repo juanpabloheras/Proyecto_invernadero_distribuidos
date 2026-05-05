@@ -1,10 +1,11 @@
 <script setup>
+import { computed, ref, onMounted } from 'vue'
 import { Home, RadioTower, Bell, BarChart3 } from 'lucide-vue-next'
 
 const menuItems = [
   {
     label: 'Home',
-    path: '/',
+    path: '/home',
     icon: Home
   },
   {
@@ -23,6 +24,31 @@ const menuItems = [
     icon: BarChart3
   }
 ]
+
+const currentUser = ref(null)
+
+const userName = computed(() => currentUser.value?.nombre || 'Usuario')
+const userEmail = computed(() => currentUser.value?.correo || 'Sin correo')
+const userInitials = computed(() => {
+  const name = userName.value.trim()
+
+  if (!name) return 'US'
+
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0].toUpperCase())
+    .join('')
+})
+
+onMounted(() => {
+  const storedUser = localStorage.getItem('currentUser')
+
+  if (storedUser) {
+    currentUser.value = JSON.parse(storedUser)
+  }
+})
 </script>
 
 <template>
@@ -46,12 +72,12 @@ const menuItems = [
 
     <div class="sidebar-user">
       <div class="avatar">
-        FL
+        {{ userInitials }}
       </div>
 
       <div class="user-info">
-        <strong>Lab Admin</strong>
-        <span>School Lab Logo</span>
+        <strong>{{ userName }}</strong>
+        <span>{{ userEmail }}</span>
       </div>
     </div>
   </aside>
