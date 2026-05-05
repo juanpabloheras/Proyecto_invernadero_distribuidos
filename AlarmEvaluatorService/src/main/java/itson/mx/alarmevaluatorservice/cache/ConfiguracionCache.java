@@ -50,30 +50,6 @@ public class ConfiguracionCache {
         return lista == null ? Collections.emptyList() : lista;
     }
 
-    public void agregarOActualizar(ConfiguracionAlarma nueva) {
-        if (nueva == null || !nueva.getActiva()) {
-            return;
-        }
-        String key = normalizar(nueva.getTipoAlarma());
-        porTipo.compute(key, (k, actual) -> {
-            List<ConfiguracionAlarma> base = actual == null ? List.of() : actual;
-            List<ConfiguracionAlarma> nuevoListado = new ArrayList<>(base.size() + 1);
-            boolean reemplazada = false;
-            for (ConfiguracionAlarma c : base) {
-                if (c.getIdConfiguracionAlarma() == nueva.getIdConfiguracionAlarma()) {
-                    nuevoListado.add(nueva);
-                    reemplazada = true;
-                } else {
-                    nuevoListado.add(c);
-                }
-            }
-            if (!reemplazada) {
-                nuevoListado.add(nueva);
-            }
-            return List.copyOf(nuevoListado);
-        });
-    }
-
     private static String normalizar(String tipoAlarma) {
         return tipoAlarma == null ? "" : tipoAlarma.trim().toUpperCase();
     }
