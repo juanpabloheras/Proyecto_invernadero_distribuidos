@@ -1,14 +1,11 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
 import { getAlarmas } from '../services/alarmas-service.js'
+import { getLecturas } from '../services/historical-service.js'
 import { getSensores } from '../services/sensores-service.js'
 import {
-  TrendingUp,
-  Clock,
   Thermometer,
-  Droplets,
-  LogOut
+  Droplets
 } from 'lucide-vue-next'
 
 import {
@@ -39,7 +36,7 @@ ChartJS.register(
 const sensoresActivos = ref(0)
 const totalAlarmas = ref(0)
 const statsError = ref('')
-const router = useRouter()
+const lecturasGrafica = ref([])
 
 async function loadHomeStats() {
   try {
@@ -62,31 +59,155 @@ async function loadHomeStats() {
   } catch (error) {
     statsError.value = error.message
   }
+
+  try {
+    const lecturasResponse = await getLecturas({
+      pagina: 0,
+      size: 30
+    })
+
+    lecturasGrafica.value = lecturasResponse.datos || []
+  } catch (error) {
+    statsError.value = error.message
+  }
 }
 
 onMounted(() => {
   loadHomeStats()
 })
 
-function logout() {
-  localStorage.removeItem('currentUser')
-  router.push('/login')
+const chartPoints = computed(() => {
+  return lecturasGrafica.value
+    .flatMap(lectura => {
+      if (hasFlatReading(lectura)) {
+        return normalizeFlatChartPoint(lectura)
+      }
+
+      return (lectura.mediciones || [])
+        .filter(medicion =>
+          medicion.esValido &&
+          medicion.valorNumerico !== null &&
+          normalizeReadingType(medicion.tipo)
+        )
+        .map(medicion => ({
+          timestamp: lectura.timestamp,
+          type: normalizeReadingType(medicion.tipo),
+          value: medicion.valorNumerico
+        }))
+    })
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+    .slice(-16)
+})
+
+function hasFlatReading(lectura) {
+  return Boolean(lectura.fecha || lectura.tipoSensor) &&
+    lectura.valor !== null &&
+    lectura.valor !== undefined
 }
 
-const chartData = {
-  labels: ['06:00 AM', '10:00 AM', '02:00 PM', '06:00 PM', '10:00 PM'],
-  datasets: [
-    {
-      label: 'Tendencia de Datos',
-      data: [18, 23, 22, 19, 28],
-      borderColor: '#45c876',
-      backgroundColor: 'rgba(69, 200, 118, 0.12)',
-      fill: true,
-      tension: 0.45,
-      pointRadius: 0,
-      borderWidth: 3
-    }
-  ]
+function normalizeFlatChartPoint(lectura) {
+  const type = normalizeReadingType(lectura.tipoSensor)
+
+  if (!type || lectura.valor === null || lectura.valor === undefined) {
+    return []
+  }
+
+  return [{
+    timestamp: lectura.fecha,
+    type,
+    value: lectura.valor
+  }]
+}
+
+const chartData = computed(() => {
+  const points = chartPoints.value
+  const hasData = points.length > 0
+  const labels = hasData
+    ? [...new Set(points.map(point => formatChartTime(point.timestamp)))]
+    : ['Sin datos']
+
+  return {
+    labels,
+    datasets: [
+      buildDataset({
+        label: 'Temperatura (C)',
+        type: 'Temperatura',
+        labels,
+        points,
+        borderColor: '#45c876',
+        backgroundColor: 'rgba(69, 200, 118, 0.12)',
+        hasData
+      }),
+      buildDataset({
+        label: 'Humedad (%)',
+        type: 'Humedad',
+        labels,
+        points,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.08)',
+        hasData
+      })
+    ]
+  }
+})
+
+const chartValueSummary = computed(() => {
+  const temperatureValues = chartPoints.value
+    .filter(point => point.type === 'Temperatura')
+    .map(point => point.value)
+  const humidityValues = chartPoints.value
+    .filter(point => point.type === 'Humedad')
+    .map(point => point.value)
+
+  return {
+    temperatura: getLatestValue(temperatureValues),
+    humedad: getLatestValue(humidityValues)
+  }
+})
+
+function buildDataset({ label, type, labels, points, borderColor, backgroundColor, hasData }) {
+  return {
+    label,
+    data: hasData
+      ? labels.map(labelTime => {
+          const point = points.find(item =>
+            item.type === type &&
+            formatChartTime(item.timestamp) === labelTime
+          )
+
+          return point?.value ?? null
+        })
+      : [0],
+    borderColor,
+    backgroundColor,
+    fill: false,
+    tension: 0.45,
+    pointRadius: hasData ? 3 : 0,
+    borderWidth: 3,
+    spanGaps: true
+  }
+}
+
+function normalizeReadingType(type) {
+  const value = type?.toLowerCase() || ''
+
+  if (value.includes('temperatura')) return 'Temperatura'
+  if (value.includes('humedad')) return 'Humedad'
+
+  return null
+}
+
+function getLatestValue(values) {
+  if (!values.length) return '--'
+
+  return values[values.length - 1].toFixed(1)
+}
+
+function formatChartTime(timestamp) {
+  return new Date(timestamp).toLocaleTimeString('es-MX', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 const chartOptions = {
@@ -110,7 +231,13 @@ const chartOptions = {
       }
     },
     tooltip: {
-      enabled: true
+      enabled: true,
+      callbacks: {
+        label(context) {
+          const unit = context.dataset.label.includes('Humedad') ? '%' : ' C'
+          return `${context.dataset.label}: ${context.parsed.y}${unit}`
+        }
+      }
     }
   },
   scales: {
@@ -129,9 +256,20 @@ const chartOptions = {
       }
     },
     y: {
-      display: false,
+      display: true,
+      min: 0,
+      max: 100,
       grid: {
-        display: false
+        color: '#edf2f7'
+      },
+      ticks: {
+        color: '#9ca3af',
+        font: {
+          size: 10
+        },
+        callback(value) {
+          return `${value}`
+        }
       },
       border: {
         display: false
@@ -148,12 +286,6 @@ const chartOptions = {
         <h1>Hola, Administrador</h1>
       </div>
 
-      <div class="header-actions">
-        <button class="logout-button" @click="logout">
-          <LogOut :size="18" />
-          Cerrar sesion
-        </button>
-      </div>
     </header>
 
     <section class="stats-grid">
@@ -191,24 +323,27 @@ const chartOptions = {
 
     <section class="chart-card">
       <div class="chart-header">
-        <h2>Historial del Día</h2>
+        <div>
+          <h2>Temperatura y humedad recientes</h2>
+          <p>Ultimas lecturas registradas por los sensores</p>
+        </div>
+
+        <div class="chart-metrics">
+          <span>
+            <strong>{{ chartValueSummary.temperatura }}</strong>
+            C temp.
+          </span>
+          <span>
+            <strong>{{ chartValueSummary.humedad }}</strong>
+            % humedad
+          </span>
+        </div>
       </div>
 
       <div class="chart-wrapper">
         <Line :data="chartData" :options="chartOptions" />
       </div>
 
-      <div class="chart-footer">
-        <span>
-          <TrendingUp :size="14" />
-          +12% vs ayer
-        </span>
-
-        <span>
-          <Clock :size="14" />
-          Actualizado hace 5 min
-        </span>
-      </div>
     </section>
   </section>
 </template>
@@ -233,34 +368,6 @@ const chartOptions = {
   font-weight: 800;
   color: #1f2937;
   letter-spacing: -0.7px;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.logout-button {
-  height: 42px;
-  border: 1px solid #d6dfd3;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #4b5563;
-  padding: 0 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.logout-button:hover {
-  background: #f8fafc;
-  color: #b91c1c;
-  border-color: #f0c8c8;
 }
 
 .stats-grid {
@@ -347,6 +454,7 @@ const chartOptions = {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 18px;
   margin-bottom: 18px;
 }
 
@@ -357,25 +465,45 @@ const chartOptions = {
   color: #334155;
 }
 
-.chart-wrapper {
-  width: 100%;
-  height: 290px;
-}
-
-.chart-footer {
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-  gap: 28px;
+.chart-header p {
+  margin: 5px 0 0;
   color: #94a3b8;
   font-size: 13px;
   font-weight: 600;
 }
 
-.chart-footer span {
+.chart-metrics {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.chart-metrics span {
+  min-width: 102px;
+  height: 42px;
+  border: 1px solid #e5ebf2;
+  border-radius: 10px;
+  display: grid;
+  align-content: center;
+  padding: 0 12px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.chart-metrics strong {
+  display: block;
+  color: #1f2937;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.chart-wrapper {
+  width: 100%;
+  height: 290px;
 }
 
 .bottom-grid {
@@ -457,10 +585,14 @@ const chartOptions = {
     height: 230px;
   }
 
-  .chart-footer {
-    flex-direction: column;
+  .chart-header {
     align-items: flex-start;
-    gap: 8px;
+    flex-direction: column;
   }
+
+  .chart-metrics {
+    justify-content: flex-start;
+  }
+
 }
 </style>

@@ -1,8 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { getLecturas } from '../services/historical-service.js'
 import {
   CalendarDays,
-  Leaf,
   Thermometer,
   Droplets,
   Activity,
@@ -10,116 +10,158 @@ import {
   CircleCheck
 } from 'lucide-vue-next'
 
-const fechaInicio = ref('2026-05-01')
-const fechaFin = ref('2026-05-03')
-const invernaderoSeleccionado = ref('Invernadero Alpha')
+const fechaInicio = ref('')
+const fechaFin = ref('')
+const registros = ref([])
+const totalRegistros = ref(0)
+const currentPage = ref(1)
+const itemsPerPage = 10
+const isLoading = ref(false)
+const errorMessage = ref('')
 
-const registros = ref([
-  {
-    id: 1,
-    fechaHora: '2026-05-03 08:30',
-    sensor: 'Temp_Sensor_01',
-    tipo: 'Temperatura',
-    valor: 24.5,
-    unidad: '°C'
-  },
-  {
-    id: 2,
-    fechaHora: '2026-05-03 08:15',
-    sensor: 'Humidity_Node_A',
-    tipo: 'Humedad',
-    valor: 62,
-    unidad: '%'
-  },
-  {
-    id: 3,
-    fechaHora: '2026-05-03 08:00',
-    sensor: 'Soil_Moist_04',
-    tipo: 'Humedad de suelo',
-    valor: 38.2,
-    unidad: '%'
-  },
-  {
-    id: 4,
-    fechaHora: '2026-05-03 07:45',
-    sensor: 'Temp_Sensor_01',
-    tipo: 'Temperatura',
-    valor: 23.8,
-    unidad: '°C'
-  },
-  {
-    id: 5,
-    fechaHora: '2026-05-03 07:30',
-    sensor: 'Humidity_Node_A',
-    tipo: 'Humedad',
-    valor: 64.1,
-    unidad: '%'
-  },
-  {
-    id: 6,
-    fechaHora: '2026-05-02 18:10',
-    sensor: 'Temp_Sensor_02',
-    tipo: 'Temperatura',
-    valor: 25.1,
-    unidad: '°C'
-  }
-])
-
-const promedioTemperatura = computed(() => {
-  const datos = registros.value.filter(registro => registro.tipo === 'Temperatura')
-
-  if (!datos.length) return 0
-
-  const suma = datos.reduce((total, registro) => total + registro.valor, 0)
-  return (suma / datos.length).toFixed(1)
+const promedioTemperatura = computed(() => getAverageByType('Temperatura'))
+const promedioHumedad = computed(() => getAverageByType('Humedad'))
+const totalPages = computed(() => {
+  return Math.max(1, Math.ceil(registros.value.length / itemsPerPage))
 })
 
-const promedioHumedad = computed(() => {
-  const datos = registros.value.filter(registro => registro.tipo === 'Humedad')
-
-  if (!datos.length) return 0
-
-  const suma = datos.reduce((total, registro) => total + registro.valor, 0)
-  return (suma / datos.length).toFixed(1)
+const paginatedRegistros = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return registros.value.slice(start, end)
 })
 
-const promedioHumedadSuelo = computed(() => {
-  const datos = registros.value.filter(registro => registro.tipo === 'Humedad de suelo')
+async function consultarReportes() {
+  try {
+    isLoading.value = true
+    errorMessage.value = ''
 
-  if (!datos.length) return 0
-
-  const suma = datos.reduce((total, registro) => total + registro.valor, 0)
-  return (suma / datos.length).toFixed(1)
-})
-
-function consultarReportes() {
-  console.log('Consultando reportes con:', {
-    fechaInicio: fechaInicio.value,
-    fechaFin: fechaFin.value,
-    invernadero: invernaderoSeleccionado.value
-  })
-
-  /*
-    Después aquí conectarías el backend.
-
-    Ejemplo:
-
-    const response = await ReportesApi.obtenerPorFiltros({
-      fechaInicio: fechaInicio.value,
-      fechaFin: fechaFin.value,
-      invernadero: invernaderoSeleccionado.value
+    const response = await getLecturas({
+      pagina: 0,
+      size: 100
     })
 
-    registros.value = response.data.datos
-  */
+    totalRegistros.value = response.totalRegistros
+    registros.value = mapLecturasToRegistros(response.datos || [])
+      .filter(registro => isInsideDateRange(registro.timestamp))
+    currentPage.value = 1
+  } catch (error) {
+    errorMessage.value = error.message
+  } finally {
+    isLoading.value = false
+  }
 }
+
+function mapLecturasToRegistros(lecturas) {
+  return lecturas.flatMap(lectura => {
+    if (hasFlatReading(lectura)) {
+      return [mapLecturaPlanaToRegistro(lectura)]
+    }
+
+    return (lectura.mediciones || [])
+      .filter(medicion => medicion.esValido && medicion.valorNumerico !== null)
+      .map((medicion, index) => ({
+        id: `${lectura.id || lectura.sensorId}-${lectura.timestamp}-${index}`,
+        timestamp: lectura.timestamp,
+        fechaHora: formatDateTime(lectura.timestamp),
+        sensor: lectura.sensorId,
+        tipo: normalizeTipo(medicion.tipo),
+        valor: medicion.valorNumerico,
+        unidad: normalizeUnidad(medicion.unidad)
+      }))
+  })
+}
+
+function hasFlatReading(lectura) {
+  return Boolean(lectura.fecha || lectura.tipoSensor) &&
+    lectura.valor !== null &&
+    lectura.valor !== undefined
+}
+
+function mapLecturaPlanaToRegistro(lectura) {
+  return {
+    id: lectura.id,
+    timestamp: lectura.fecha,
+    fechaHora: formatDateTime(lectura.fecha),
+    sensor: lectura.sensorId || 'Sensor historico',
+    tipo: normalizeTipo(lectura.tipoSensor),
+    valor: lectura.valor,
+    unidad: normalizeUnidad(lectura.unidad)
+  }
+}
+
+function isInsideDateRange(timestamp) {
+  if (!fechaInicio.value && !fechaFin.value) return true
+
+  const date = new Date(timestamp)
+  const start = fechaInicio.value ? new Date(`${fechaInicio.value}T00:00:00`) : null
+  const end = fechaFin.value ? new Date(`${fechaFin.value}T23:59:59`) : null
+
+  if (start && date < start) return false
+  if (end && date > end) return false
+
+  return true
+}
+
+function getAverageByType(tipo) {
+  const datos = registros.value.filter(registro => registro.tipo === tipo)
+
+  if (!datos.length) return 0
+
+  const suma = datos.reduce((total, registro) => total + registro.valor, 0)
+  return (suma / datos.length).toFixed(1)
+}
+
+function formatDateTime(timestamp) {
+  return new Date(timestamp).toLocaleString('es-MX', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function normalizeTipo(tipo) {
+  const value = tipo?.toLowerCase() || ''
+
+  if (value.includes('temperatura')) return 'Temperatura'
+  if (value.includes('humedad') && value.includes('suelo')) return 'Humedad de suelo'
+  if (value.includes('humedad')) return 'Humedad'
+
+  return tipo || 'Desconocido'
+}
+
+function normalizeUnidad(unidad) {
+  if (!unidad) return ''
+  if (unidad.includes('C')) return 'C'
+  return unidad
+}
+
+function previousPage() {
+  if (currentPage.value > 1) currentPage.value--
+}
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) currentPage.value++
+}
+
+function goToPage(page) {
+  currentPage.value = page
+}
+
+onMounted(() => {
+  consultarReportes()
+})
 </script>
 
 <template>
   <section class="reports-page">
     <header class="page-header">
-      <h1>Reportes y análisis</h1>
+      <h1>Reportes y analisis</h1>
     </header>
+
+    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
     <section class="filters-card">
       <div class="filter-group">
@@ -140,7 +182,6 @@ function consultarReportes() {
         </div>
       </div>
 
-
       <button class="search-button" @click="consultarReportes">
         Consultar datos
       </button>
@@ -151,7 +192,7 @@ function consultarReportes() {
         <section class="records-card">
           <div class="card-header">
             <h2>Registros recientes</h2>
-            <span>Últimas 24 horas</span>
+            <span>{{ registros.length }} mediciones</span>
           </div>
 
           <div class="table-wrapper">
@@ -167,7 +208,13 @@ function consultarReportes() {
               </thead>
 
               <tbody>
-                <tr v-for="registro in registros" :key="registro.id">
+                <tr v-if="isLoading">
+                  <td colspan="5" class="empty-state">
+                    Cargando registros...
+                  </td>
+                </tr>
+
+                <tr v-for="registro in paginatedRegistros" :key="registro.id">
                   <td>{{ registro.fechaHora }}</td>
                   <td>{{ registro.sensor }}</td>
                   <td>{{ registro.tipo }}</td>
@@ -175,13 +222,37 @@ function consultarReportes() {
                   <td>{{ registro.unidad }}</td>
                 </tr>
 
-                <tr v-if="registros.length === 0">
+                <tr v-if="!isLoading && paginatedRegistros.length === 0">
                   <td colspan="5" class="empty-state">
                     No hay registros disponibles para el rango seleccionado.
                   </td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div class="table-footer">
+            <p>Mostrando {{ paginatedRegistros.length }} de {{ registros.length }} registros</p>
+
+            <div class="pagination">
+              <button class="page-arrow" @click="previousPage" :disabled="currentPage === 1">
+                &lsaquo;
+              </button>
+
+              <button
+                v-for="page in totalPages"
+                :key="page"
+                class="page-number"
+                :class="{ active: page === currentPage }"
+                @click="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+
+              <button class="page-arrow" @click="nextPage" :disabled="currentPage === totalPages">
+                &rsaquo;
+              </button>
+            </div>
           </div>
         </section>
       </section>
@@ -202,7 +273,7 @@ function consultarReportes() {
                 <Thermometer :size="15" />
                 Temperatura
               </span>
-              <strong>{{ promedioTemperatura }}°C</strong>
+              <strong>{{ promedioTemperatura }} C</strong>
             </div>
 
             <div class="average-row">
@@ -213,13 +284,6 @@ function consultarReportes() {
               <strong>{{ promedioHumedad }}%</strong>
             </div>
 
-            <div class="average-row">
-              <span>
-                <Leaf :size="15" />
-                Humedad suelo
-              </span>
-              <strong>{{ promedioHumedadSuelo }}%</strong>
-            </div>
           </div>
         </section>
 
@@ -230,7 +294,7 @@ function consultarReportes() {
 
           <div>
             <h2>Estado actual</h2>
-            <p>Todos los sensores se encuentran transmitiendo correctamente.</p>
+            <p>Datos historicos consultados desde MongoDB.</p>
           </div>
         </section>
 
@@ -240,9 +304,9 @@ function consultarReportes() {
           </div>
 
           <div>
-            <h2>Total de registros</h2>
-            <strong>{{ registros.length }}</strong>
-            <p>Lecturas disponibles en el rango seleccionado.</p>
+            <h2>Total de lecturas</h2>
+            <strong>{{ totalRegistros }}</strong>
+            <p>Eventos historicos disponibles.</p>
           </div>
         </section>
       </aside>
@@ -258,25 +322,27 @@ function consultarReportes() {
 }
 
 .page-header {
-  height: 72px;
-  padding: 0 34px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  margin: -32px -32px 28px;
+  margin-bottom: 22px;
 }
 
 .page-header h1 {
   margin: 0;
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 800;
   color: #1f2937;
+  letter-spacing: -0.5px;
+}
+
+.error-message {
+  margin: 0 0 16px;
+  color: #b91c1c;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .filters-card {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.2fr auto;
+  grid-template-columns: 1fr 1fr auto;
   gap: 16px;
   align-items: end;
   margin-bottom: 24px;
@@ -315,17 +381,6 @@ function consultarReportes() {
   background: transparent;
 }
 
-.filter-group select {
-  height: 44px;
-  border: 1px solid #d1d5db;
-  border-radius: 9px;
-  padding: 0 13px;
-  outline: none;
-  color: #374151;
-  background: #ffffff;
-  font-weight: 700;
-}
-
 .search-button {
   height: 44px;
   border: none;
@@ -361,7 +416,6 @@ function consultarReportes() {
   gap: 18px;
 }
 
-.records-card,
 .average-card,
 .status-card,
 .data-card {
@@ -371,11 +425,14 @@ function consultarReportes() {
 }
 
 .records-card {
-  overflow: hidden;
+  background: #eef5ec;
+  border: 1px solid #dde8da;
+  border-radius: 16px;
+  padding: 22px;
 }
 
 .card-header {
-  padding: 18px 22px;
+  padding: 0 0 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -402,6 +459,9 @@ function consultarReportes() {
 
 .table-wrapper {
   overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #dce5d9;
+  border-radius: 14px 14px 0 0;
 }
 
 .records-table {
@@ -410,20 +470,23 @@ function consultarReportes() {
 }
 
 .records-table th {
-  background: #f8fafc;
+  background: #ffffff;
   color: #6b7280;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 800;
   text-align: left;
-  padding: 15px 22px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5ece3;
+  vertical-align: middle;
 }
 
 .records-table td {
-  padding: 16px 22px;
-  border-top: 1px solid #e5e7eb;
+  padding: 20px;
+  border-bottom: 1px solid #e5ece3;
   color: #374151;
   font-size: 14px;
   font-weight: 600;
+  vertical-align: middle;
 }
 
 .value-cell {
@@ -435,6 +498,56 @@ function consultarReportes() {
   text-align: center;
   color: #94a3b8 !important;
   padding: 28px !important;
+}
+
+.table-footer {
+  background: #ffffff;
+  border: 1px solid #dce5d9;
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.table-footer p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-number,
+.page-arrow {
+  min-width: 32px;
+  height: 32px;
+  border: 1px solid #d6dfd3;
+  background: #ffffff;
+  border-radius: 8px;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.page-number.active {
+  background: #0a7a43;
+  color: #ffffff;
+  border-color: #0a7a43;
+}
+
+.page-arrow:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .average-card {
@@ -534,17 +647,17 @@ function consultarReportes() {
 }
 
 @media (max-width: 760px) {
-  .page-header {
-    margin: -32px -32px 24px;
-    padding: 0 22px;
-  }
-
   .filters-card {
     grid-template-columns: 1fr;
   }
 
   .records-table {
     min-width: 760px;
+  }
+
+  .table-footer {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>
