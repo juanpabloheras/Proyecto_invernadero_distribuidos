@@ -96,6 +96,16 @@ public class SensorDataService {
         var query = repository.buscarPorSensor(sensorId).page(pagina, size);
         return armarRespuesta(query, pagina);
     }
+    
+    public RespuestaPaginada<SensorData> obtenerHistorialPorRangoFechas(Instant inicio, Instant fin, int pagina, int size) {
+        var query = repository.buscarPorRangoDeFechas(inicio, fin).page(pagina, size);
+        return armarRespuesta(query, pagina);
+    }
+
+    public RespuestaPaginada<SensorData> obtenerHistorialPorSensorYFechas(String sensorId, Instant inicio, Instant fin, int pagina, int size) {
+        var query = repository.buscarPorSensorYFechas(sensorId, inicio, fin).page(pagina, size);
+        return armarRespuesta(query, pagina);
+    }
 
     // Método auxiliar para no repetir código
     private RespuestaPaginada<SensorData> armarRespuesta(io.quarkus.mongodb.panache.PanacheQuery<SensorData> query, int pagina) {
