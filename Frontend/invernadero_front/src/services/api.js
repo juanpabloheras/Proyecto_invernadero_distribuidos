@@ -5,25 +5,16 @@ const API_URL = 'http://localhost:3000';
 export async function apiRequest(path, options = {}) {
 
     const user = auth.currentUser
+    const token = user ? await user.getIdToken() : null
 
-    let token = null
-
-    if (user) {
-        token = await user.getIdToken()
-    }
 
     const response = await fetch(`${API_URL}${path}`, {
+        ...options,
         headers: {
             'Content-Type': 'application/json',
-
-            ...(token && {
-                Authorization: `Bearer ${token}`
-            }),
-
-            ...options.headers,
-        },
-
-        ...options,
+            ...(token && { Authorization: `Bearer ${token}` }),
+            ...(options.headers || {})
+        }
     });
 
     const data = await response.json();

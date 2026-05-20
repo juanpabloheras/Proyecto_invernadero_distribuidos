@@ -65,7 +65,10 @@ onMounted(() => {
     }
 
     try {
-      currentUser.value = await obtenerUsuarioActual()
+      const response = await obtenerUsuarioActual()
+      console.log('Usuario actual: ', response)
+
+      currentUser.value = response.data || response;
     } catch (err) {
       console.error('Error obteniendo usuario actual: ', err)
       currentUser.value = null
