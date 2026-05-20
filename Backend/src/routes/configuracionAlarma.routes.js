@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const configuracionAlarmaController = require("../controllers/configuracionAlarma.controller");
+const verificarTokenFirebase = require("../middlewares/firebase-auth");
+
+router.use(verificarTokenFirebase);
 
 router.get("/", configuracionAlarmaController.obtenerConfiguracionesAlarmas);
 router.post("/", configuracionAlarmaController.crearConfiguracionAlarma);
