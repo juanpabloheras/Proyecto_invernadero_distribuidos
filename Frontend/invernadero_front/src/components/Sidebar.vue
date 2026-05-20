@@ -66,7 +66,7 @@ onMounted(() => {
 
     try {
       const response = await obtenerUsuarioActual()
-      console.log('Usuario actual: ', response)
+      
 
       currentUser.value = response.data || response;
     } catch (err) {
