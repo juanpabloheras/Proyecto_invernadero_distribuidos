@@ -1,5 +1,17 @@
 const usuarioService = require('../services/usuario.service');
 
+
+async function obtenerUsuarioActual(req, res, next) {
+  try { 
+    const firebaseUid = req.firebaseUser.uid;
+
+    const usuario = await usuarioService.obtenerUsuarioPorFirebaseUid(firebaseUid);
+
+    return res.json(usuario);
+  } catch (error) {
+    next(error);
+  }
+} 
 const registrarUsuario = async (req, res, next) => {
   try {
     const nuevoUsuario = await usuarioService.registrarUsuario(req.body);

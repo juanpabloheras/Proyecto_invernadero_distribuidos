@@ -21,9 +21,11 @@ const Usuario = sequelize.define('Usuario',
                 isEmail: true
             }
         },
-        contrasenia: {
-            type: DataTypes.STRING(255),
-            allowNull: false
+        firebaseUid: {
+            type: DataTypes.STRING(128),
+            allowNull: false, 
+            unique: true,
+            field: 'firebase_uid'
         }
     },
     {

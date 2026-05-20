@@ -2,6 +2,15 @@ const bcrypt = require('bcrypt');
 const usuarioDao = require('../data/usuario.dao');
 const AppError = require('../utils/AppError');
 
+const obtenerUsuarioPorFirebaseUid = async (firebaseUid) => {
+  const usuario = usuarioDao.obtenerPorFirebaseUid(firebaseUid);
+
+  if (!usuario){
+    throw new AppError('Usuario no encontrado en la base de datos', 404);
+  }
+  return usuario
+}
+
 const registrarUsuario = async (data) => {
   const { nombre, correo, contrasenia, rol } = data;
 
@@ -109,5 +118,6 @@ module.exports = {
   obtenerUsuarios,
   obtenerUsuarioPorId,
   actualizarUsuario,
-  eliminarUsuario
+  eliminarUsuario,
+  obtenerUsuarioPorFirebaseUid
 };

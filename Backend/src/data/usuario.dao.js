@@ -4,6 +4,13 @@ const crear = async (data) => {
   return await Usuario.create(data);
 };
 
+const obtenerPorFirebaseUid = async (firebaseUid) => {
+  return await Usuario.findOne({
+    where: { firebaseUid }
+  });
+};
+
+
 const obtenerTodos = async () => {
   return await Usuario.findAll({
     attributes: { exclude: ['contrasenia'] }
@@ -54,5 +61,6 @@ module.exports = {
   obtenerPorId,
   obtenerPorCorreo,
   actualizar,
-  eliminar
+  eliminar,
+  obtenerPorFirebaseUid
 };
