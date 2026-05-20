@@ -6,6 +6,9 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jboss.logging.Logger;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Publisher de lecturas de sensores a RabbitMQ usando Topic Exchange.
@@ -22,6 +25,8 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 @ApplicationScoped
 public class RabbitMQPublisher {
 
+    private static final Logger LOG = Logger.getLogger(RabbitMQPublisher.class);
+
     private static final String ROUTING_KEY_SENSOR_LECTURA_REGISTRADA =
             "sensor.lectura.registrada";
 
@@ -35,7 +40,7 @@ public class RabbitMQPublisher {
 
     private void publicar(String eventJson, String routingKey) {
         if (eventJson == null || eventJson.isBlank()) {
-            System.out.println("[RABBITMQ] JSON vacío, no se publica");
+            LOG.warn("[RABBITMQ] JSON vacío, no se publica");
             return;
         }
 
@@ -45,15 +50,23 @@ public class RabbitMQPublisher {
                             .withRoutingKey(routingKey)
                             .build();
 
-            Message<String> message =
-                    Message.of(eventJson).addMetadata(metadata);
+            Message<String> message = Message.of(
+                    eventJson,
+                    () -> CompletableFuture.completedFuture(null),
+                    reason -> {
+                        LOG.errorf("[RABBITMQ] Nack para routing key '%s': %s",
+                                routingKey, reason.getMessage());
+                        return CompletableFuture.completedFuture(null);
+                    }
+            ).addMetadata(metadata);
 
             emitter.send(message);
 
-            System.out.println("[RABBITMQ] Publicado → " + routingKey);
+            LOG.infof("[RABBITMQ] Publicado → %s", routingKey);
 
         } catch (Exception e) {
-            System.err.println("[RABBITMQ] Error al publicar: " + e.getMessage());
+            LOG.errorf("[RABBITMQ] Error al publicar (routing key: %s): %s",
+                    routingKey, e.getMessage());
         }
     }
 }

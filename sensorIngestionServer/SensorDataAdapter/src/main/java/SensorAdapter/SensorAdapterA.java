@@ -13,7 +13,7 @@ import java.util.ArrayList;
  * Estructura del paquete:
  * [0]      version (u8)
  * [1]      comando (u8)
- * [2-3]    longitud (u16 big-endian)packetProceso
+ * [2-3]    longitud (u16 big-endian)  ← byte[2] siempre 0x00 para paquetes de 36 bytes
  * [4-15]   sensorId (12 bytes string)
  * [16-23]  timestamp (u64 big-endian)
  * [24-27]  temperatura (float32 big-endian)
@@ -24,7 +24,7 @@ import java.util.ArrayList;
  *
  * @author Sistema Invernadero Distribuido
  */
-public class SensorAdapterA implements ISensorAdapter {
+public class SensorAdapterA extends AbstractSensorAdapter {
 
     private static final int TAMANIO_PAQUETE = 36;
     private static final byte CAMPO_TEMPERATURA = 0x01;
@@ -33,64 +33,49 @@ public class SensorAdapterA implements ISensorAdapter {
     @Override
     public SensorEvent adaptar(byte[] paquete) {
         if (paquete == null || paquete.length < TAMANIO_PAQUETE) {
-            throw new IllegalArgumentException("Paquete inválido para Protocolo A. Esperado: " + TAMANIO_PAQUETE + " bytes, Recibido: " + (paquete != null ? paquete.length : 0));
+            throw new IllegalArgumentException("Paquete inválido para Protocolo A. Esperado: "
+                    + TAMANIO_PAQUETE + " bytes, Recibido: "
+                    + (paquete != null ? paquete.length : 0));
         }
 
         try {
             ByteBuffer buffer = ByteBuffer.wrap(paquete).order(ByteOrder.BIG_ENDIAN);
 
-            // Leer header
-            byte version = buffer.get();        // [0]
-            byte comando = buffer.get();        // [1]
-            int longitud = buffer.getShort() & 0xFFFF;  // [2-3] unsigned short
+            byte version = buffer.get();
+            byte comando = buffer.get();
+            int longitud = buffer.getShort() & 0xFFFF;
 
-            // Leer sensorId (12 bytes)
             byte[] sensorIdBytes = new byte[12];
-            buffer.get(sensorIdBytes);          // [4-15]
+            buffer.get(sensorIdBytes);
             String sensorId = new String(sensorIdBytes).trim();
 
-            // Leer timestamp (u64)
-            long timestampMillis = buffer.getLong();  // [16-23]
+            long timestampMillis = buffer.getLong();
             Timestamp timestamp = new Timestamp(timestampMillis);
 
-            // Leer temperatura (float32)
-            float temperatura = buffer.getFloat();   // [24-27]
+            float temperatura = buffer.getFloat();
+            float humedad = buffer.getFloat();
+            byte camposActivos = buffer.get();
+            buffer.get(); // padding
 
-            // Leer humedad (float32)
-            float humedad = buffer.getFloat();       // [28-31]
-
-            // Leer campos activos (bitmask)
-            byte camposActivos = buffer.get();       // [32]
-
-            // Leer padding
-            buffer.get();                            // [33]
-
-            // Leer checksum
-            int checksumRecibido = buffer.getShort() & 0xFFFF;  // [34-35]
-
-            // Validar checksum
+            int checksumRecibido = buffer.getShort() & 0xFFFF;
             int checksumCalculado = calcularChecksum(paquete, paquete.length - 2);
             if (checksumRecibido != checksumCalculado) {
-                System.out.println("[ADVERTENCIA] Checksum no coincide. Recibido: " + checksumRecibido + ", Calculado: " + checksumCalculado);
+                System.out.println("[ADVERTENCIA] Checksum no coincide. Recibido: "
+                        + checksumRecibido + ", Calculado: " + checksumCalculado);
             }
 
-            // Crear evento canónico
             SensorEvent event = new SensorEvent();
             event.setVersion(version);
             event.setSensorId(sensorId);
             event.setTimestamp(timestamp);
 
-            // Construir ArrayList de mediciones según bitmask
             ArrayList<String> mediciones = new ArrayList<>();
-
             if ((camposActivos & CAMPO_TEMPERATURA) != 0) {
                 mediciones.add(String.format("temperatura:%.1f°C", temperatura));
             }
-
             if ((camposActivos & CAMPO_HUMEDAD) != 0) {
                 mediciones.add(String.format("humedad:%.1f%%", humedad));
             }
-
             event.setMediciones(mediciones);
 
             return event;
@@ -103,19 +88,5 @@ public class SensorAdapterA implements ISensorAdapter {
     @Override
     public String getTipo() {
         return "A";
-    }
-
-    /**
-     * Calcula checksum simple (suma de todos los bytes mod 0xFFFF)
-     * @param data Datos del paquete
-     * @param len Longitud a procesar (sin incluir el checksum final)
-     * @return Checksum calculado
-     */
-    private int calcularChecksum(byte[] data, int len) {
-        int sum = 0;
-        for (int i = 0; i < len; i++) {
-            sum += (data[i] & 0xFF);
-        }
-        return sum & 0xFFFF;
     }
 }
