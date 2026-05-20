@@ -6,6 +6,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from '../services/firebase.js'
 import { obtenerUsuarioActual } from '../services/usuarios-service.js'
 
+const SSE_URL = import.meta.env.VITE_SSE_URL
 const notificaciones = ref([])
 const sseConectado = ref(false)
 const router = useRouter()
@@ -38,7 +39,7 @@ const menuItems = [
 const currentUser = ref(null)
 
 const userName = computed(() => currentUser.value?.nombre || 'Usuario')
-const userEmail = computed(() => currentUser.value?.email || 'Sin correo')
+const userEmail = computed(() => currentUser.value?.correo || currentUser.value?.email || 'Sin correo')
 const userInitials = computed(() => {
   const name = userName.value.trim()
 
@@ -66,9 +67,13 @@ onMounted(() => {
 
     try {
       const response = await obtenerUsuarioActual()
-      
+      const usuario = response?.data ?? response
 
-      currentUser.value = response.data || response;
+      if (!usuario) {
+        throw new Error('Usuario no encontrado en la base de datos')
+      }
+
+      currentUser.value = usuario;
     } catch (err) {
       console.error('Error obteniendo usuario actual: ', err)
       currentUser.value = null
@@ -76,7 +81,7 @@ onMounted(() => {
     }
   })
 
-  eventSource = new EventSource('http://localhost:8082/notificaciones/stream')
+  eventSource = new EventSource(`${SSE_URL}/notificaciones/stream`)
 
   eventSource.onopen = () => {
     sseConectado.value = true

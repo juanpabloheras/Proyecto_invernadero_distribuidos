@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { getLecturas } from '../services/historical-service.js'
+import { getLecturas, getLecturasPorFechas } from '../services/historical-service.js'
 import {
   CalendarDays,
   Thermometer,
@@ -13,7 +13,7 @@ import {
 const fechaInicio = ref('')
 const fechaFin = ref('')
 const registros = ref([])
-const totalRegistros = ref(0)
+const totalLecturas = ref(0)
 const currentPage = ref(1)
 const itemsPerPage = 10
 const isLoading = ref(false)
@@ -21,35 +21,73 @@ const errorMessage = ref('')
 
 const promedioTemperatura = computed(() => getAverageByType('Temperatura'))
 const promedioHumedad = computed(() => getAverageByType('Humedad'))
-const totalPages = computed(() => {
-  return Math.max(1, Math.ceil(registros.value.length / itemsPerPage))
-})
-
+const totalMediciones = computed(() => registros.value.length)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalMediciones.value / itemsPerPage)))
 const paginatedRegistros = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return registros.value.slice(start, end)
+  return registros.value.slice(start, start + itemsPerPage)
 })
 
-async function consultarReportes() {
+async function consultarReportes(page = 1) {
   try {
     isLoading.value = true
     errorMessage.value = ''
+    currentPage.value = page
 
-    const response = await getLecturas({
-      pagina: 0,
-      size: 100
-    })
+    const lecturas = await fetchAllLecturas()
 
-    totalRegistros.value = response.totalRegistros
-    registros.value = mapLecturasToRegistros(response.datos || [])
-      .filter(registro => isInsideDateRange(registro.timestamp))
-    currentPage.value = 1
+    totalLecturas.value = lecturas.length
+    registros.value = mapLecturasToRegistros(lecturas)
   } catch (error) {
     errorMessage.value = error.message
   } finally {
     isLoading.value = false
   }
+}
+
+async function fetchAllLecturas() {
+  const size = 100
+  const firstPage = await fetchLecturasPage({
+    pagina: 0,
+    size
+  })
+
+  const lecturas = [...(firstPage.datos || [])]
+  const totalPaginas = firstPage.totalPaginas || 1
+
+  for (let pagina = 1; pagina < totalPaginas; pagina += 1) {
+    const response = await fetchLecturasPage({
+      pagina,
+      size
+    })
+
+    lecturas.push(...(response.datos || []))
+  }
+
+  return lecturas
+}
+
+function fetchLecturasPage(params) {
+  if (!fechaInicio.value && !fechaFin.value) {
+    return getLecturas(params)
+  }
+
+  return getLecturasPorFechas({
+    ...params,
+    inicio: buildDateBoundary(fechaInicio.value, 'start'),
+    fin: buildDateBoundary(fechaFin.value, 'end')
+  })
+}
+
+function buildDateBoundary(value, boundary) {
+  if (!value) {
+    return boundary === 'start'
+      ? '1970-01-01T00:00:00.000Z'
+      : new Date().toISOString()
+  }
+
+  const time = boundary === 'start' ? 'T00:00:00.000' : 'T23:59:59.999'
+  return new Date(`${value}${time}`).toISOString()
 }
 
 function mapLecturasToRegistros(lecturas) {
@@ -88,19 +126,6 @@ function mapLecturaPlanaToRegistro(lectura) {
     valor: lectura.valor,
     unidad: normalizeUnidad(lectura.unidad)
   }
-}
-
-function isInsideDateRange(timestamp) {
-  if (!fechaInicio.value && !fechaFin.value) return true
-
-  const date = new Date(timestamp)
-  const start = fechaInicio.value ? new Date(`${fechaInicio.value}T00:00:00`) : null
-  const end = fechaFin.value ? new Date(`${fechaFin.value}T23:59:59`) : null
-
-  if (start && date < start) return false
-  if (end && date > end) return false
-
-  return true
 }
 
 function getAverageByType(tipo) {
@@ -182,7 +207,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <button class="search-button" @click="consultarReportes">
+      <button class="search-button" @click="consultarReportes(1)">
         Consultar datos
       </button>
     </section>
@@ -192,7 +217,7 @@ onMounted(() => {
         <section class="records-card">
           <div class="card-header">
             <h2>Registros recientes</h2>
-            <span>{{ registros.length }} mediciones</span>
+            <span>{{ totalMediciones }} mediciones</span>
           </div>
 
           <div class="table-wrapper">
@@ -232,7 +257,10 @@ onMounted(() => {
           </div>
 
           <div class="table-footer">
-            <p>Mostrando {{ paginatedRegistros.length }} de {{ registros.length }} registros</p>
+            <p>
+              Mostrando {{ paginatedRegistros.length }} de {{ totalMediciones }} mediciones
+              en {{ totalLecturas }} lecturas
+            </p>
 
             <div class="pagination">
               <button class="page-arrow" @click="previousPage" :disabled="currentPage === 1">
@@ -305,7 +333,7 @@ onMounted(() => {
 
           <div>
             <h2>Total de lecturas</h2>
-            <strong>{{ totalRegistros }}</strong>
+            <strong>{{ totalLecturas }}</strong>
             <p>Eventos historicos disponibles.</p>
           </div>
         </section>

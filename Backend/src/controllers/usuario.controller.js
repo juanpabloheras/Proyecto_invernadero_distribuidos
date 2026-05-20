@@ -7,7 +7,9 @@ async function obtenerUsuarioActual(req, res, next) {
 
     const usuario = await usuarioService.obtenerUsuarioPorFirebaseUid(firebaseUid);
 
-    return res.json(usuario);
+    return res.json({
+      data: usuario
+    });
   } catch (error) {
     next(error);
   }

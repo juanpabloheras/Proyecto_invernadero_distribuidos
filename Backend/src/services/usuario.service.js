@@ -3,12 +3,16 @@ const usuarioDao = require('../data/usuario.dao');
 const AppError = require('../utils/AppError');
 
 const obtenerUsuarioPorFirebaseUid = async (firebaseUid) => {
-  const usuario = usuarioDao.obtenerPorFirebaseUid(firebaseUid);
+  const usuario = await usuarioDao.obtenerPorFirebaseUid(firebaseUid);
 
   if (!usuario){
     throw new AppError('Usuario no encontrado en la base de datos', 404);
   }
-  return usuario
+
+  const usuarioSinContrasenia = usuario.toJSON();
+  delete usuarioSinContrasenia.contrasenia;
+
+  return usuarioSinContrasenia;
 }
 
 const registrarUsuario = async (data) => {

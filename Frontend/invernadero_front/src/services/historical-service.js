@@ -1,4 +1,7 @@
-const HISTORICAL_API_URL = 'http://localhost:8085'
+const HISTORICAL_API_URL =
+  import.meta.env.VITE_HISTORICAL_URL ||
+  import.meta.env.VITE_ANALITICA_URL ||
+  'http://localhost:8085'
 
 async function historicalRequest(path, options = {}) {
   const response = await fetch(`${HISTORICAL_API_URL}${path}`, {
@@ -21,6 +24,13 @@ async function historicalRequest(path, options = {}) {
 export function getLecturas(params = {}) {
   const query = new URLSearchParams(params).toString()
   const path = query ? `/api/lecturas?${query}` : '/api/lecturas'
+
+  return historicalRequest(path)
+}
+
+export function getLecturasPorFechas(params = {}) {
+  const query = new URLSearchParams(params).toString()
+  const path = query ? `/api/lecturas/fechas?${query}` : '/api/lecturas/fechas'
 
   return historicalRequest(path)
 }
