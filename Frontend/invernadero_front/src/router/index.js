@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { getCurrentUser } from '../services/auth-service.js'
 
 import HomeView from '../views/HomeView.vue'
 import LogInView from '../views/LogInView.vue'
@@ -20,14 +21,14 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to) => {
-  const isLoggedIn = Boolean(localStorage.getItem('currentUser'))
+router.beforeEach(async (to) => {
+  const user = await getCurrentUser()
 
-  if (!to.meta.public && !isLoggedIn) {
+  if (!to.meta.public && !user) {
     return '/login'
   }
 
-  if (to.path === '/login' && isLoggedIn) {
+  if (to.path === '/login' && user) {
     return '/home'
   }
 

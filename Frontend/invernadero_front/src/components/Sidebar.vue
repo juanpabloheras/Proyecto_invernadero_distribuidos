@@ -1,7 +1,10 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Home, RadioTower, Bell, BarChart3, X, LogOut } from 'lucide-vue-next'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { auth } from '../services/firebase.js'
+import { obtenerUsuarioActual } from '../services/usuarios-service.js'
 
 const notificaciones = ref([])
 const sseConectado = ref(false)
@@ -35,7 +38,7 @@ const menuItems = [
 const currentUser = ref(null)
 
 const userName = computed(() => currentUser.value?.nombre || 'Usuario')
-const userEmail = computed(() => currentUser.value?.correo || 'Sin correo')
+const userEmail = computed(() => currentUser.value?.email || 'Sin correo')
 const userInitials = computed(() => {
   const name = userName.value.trim()
 
@@ -49,13 +52,27 @@ const userInitials = computed(() => {
     .join('')
 })
 
+let unsubscribeAuth = null
+
+
 onMounted(() => {
 
-  const storedUser = localStorage.getItem('currentUser')
+  unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      currentUser.value = null
+      router.push('/login')
+      return
+    }
 
-  if (storedUser) {
-    currentUser.value = JSON.parse(storedUser)
-  }
+    try {
+      currentUser.value = await obtenerUsuarioActual()
+    } catch (err) {
+      console.error('Error obteniendo usuario actual: ', err)
+      currentUser.value = null
+      router.push('/login')
+    }
+  })
+
   eventSource = new EventSource('http://localhost:8082/notificaciones/stream')
 
   eventSource.onopen = () => {
@@ -77,6 +94,16 @@ onMounted(() => {
   }
 })
 
+onUnmounted(() => {
+  if (unsubscribeAuth) {
+    unsubscribeAuth()
+  }
+
+  if (eventSource) {
+    eventSource.close()
+  }
+})
+
 const eliminarNotificacion = (id) => {
   notificaciones.value = notificaciones.value.filter(n => n.id !== id)
 }
@@ -84,8 +111,8 @@ const limpiarTodas = () => {
   notificaciones.value = []
 }
 
-const logout = () => {
-  localStorage.removeItem('currentUser')
+const logout = async () => {
+  await signOut(auth);
 
   if (eventSource) {
     eventSource.close()

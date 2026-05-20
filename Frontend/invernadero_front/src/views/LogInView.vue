@@ -50,6 +50,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth'
+import { auth } from '../services/firebase.js'
 import { loginUsuario } from '../services/usuarios-service.js'
 
 const router = useRouter()
@@ -67,14 +69,25 @@ async function handleLogin() {
   }
 
   try {
-    const response = await loginUsuario({
-      correo: email.value,
-      contrasenia: password.value
-    })
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email.value,
+      password.value
+    );
 
-    localStorage.setItem('currentUser', JSON.stringify(response.data))
+    const token = await userCredential.user.getIdToken();
+
+    console.log('Token firebase:', token);
+
+    localStorage.setItem('firebaseToken', token);
+    localStorage.setItem('currentUser', JSON.stringify({
+      uid: userCredential.user.uid,
+      email: userCredential.user.email
+    }))
+    
     router.push('/home')
   } catch (err) {
+    console.error('Error en login:', err);
     error.value = err.message
   }
 }
