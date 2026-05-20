@@ -32,3 +32,8 @@ coverage/
 
 # NetBeans (si usas)
 nbproject/private/CLAUDE.md 
+
+
+# Firebase Admin SDK service account key
+src/config/s*.json
+firebase-service-account.json
