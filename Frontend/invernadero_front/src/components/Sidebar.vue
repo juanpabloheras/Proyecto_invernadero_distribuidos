@@ -57,7 +57,7 @@ let unsubscribeAuth = null
 
 onMounted(() => {
 
-  unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+  unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
     if (!user) {
       currentUser.value = null
       router.push('/login')
